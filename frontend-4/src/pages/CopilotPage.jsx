@@ -913,55 +913,59 @@ export default function CopilotPage() {
   })
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3 sm:gap-5">
       <PageHeader
         eyebrow={t('copilot.eyebrow', 'Your personal health companion')}
         title={t('copilot.title', 'AI Health Copilot')}
         description={t('copilot.description', 'Ask about your lab findings, doctor notes, and medical records.')}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
               variant="secondary"
               onClick={openHistory}
-              className="relative cursor-pointer"
+              className="relative cursor-pointer text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2"
             >
-              <History className="size-4" aria-hidden="true" />
-              <span>{t('copilot.history', 'Chat History')}</span>
+              <History className="size-3.5 sm:size-4" aria-hidden="true" />
+              <span>{t('copilot.history', 'History')}</span>
               {conversations.length > 0 && (
-                <span className="ml-1.5 rounded-full bg-brand-50 border border-brand-200 px-1.5 py-0.2 text-[10px] font-bold text-brand-700">
+                <span className="ml-1 rounded-full bg-brand-50 border border-brand-200 px-1.5 py-0.2 text-[10px] font-bold text-brand-700">
                   {conversations.length}
                 </span>
               )}
             </Button>
-            <Button variant="secondary" onClick={startNewConversation} className="cursor-pointer">
-              <Plus className="size-4" aria-hidden="true" />
+            <Button
+              variant="secondary"
+              onClick={startNewConversation}
+              className="cursor-pointer text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2"
+            >
+              <Plus className="size-3.5 sm:size-4" aria-hidden="true" />
               <span>{t('copilot.new_chat', 'New chat')}</span>
             </Button>
           </div>
         }
       />
 
-      <section className="panel flex h-[calc(100dvh-10.5rem)] min-h-[420px] sm:h-[calc(100dvh-13.5rem)] sm:min-h-[480px] max-h-[860px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
-          <header className="flex items-center justify-between gap-2.5 border-b border-ice-100 bg-white/60 px-3.5 py-2.5 sm:px-6 sm:py-3">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <SafeImage src="/images/ai-assistant.png" alt="" className="size-9 sm:size-12 shrink-0 overflow-hidden rounded-xl sm:rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
+      <section className="panel flex h-[calc(100dvh-9.5rem)] min-h-[420px] sm:h-[calc(100dvh-13.5rem)] sm:min-h-[480px] max-h-[860px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
+          <header className="flex items-center justify-between gap-2 border-b border-ice-100 bg-white/60 px-2.5 py-2 sm:px-6 sm:py-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <SafeImage src="/images/ai-assistant.png" alt="" className="size-8 sm:size-11 shrink-0 overflow-hidden rounded-lg sm:rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-extrabold text-navy-900">Your HealthSaathi</h2>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h2 className="text-xs sm:text-sm font-extrabold text-navy-900 truncate">Your HealthSaathi</h2>
                   {activeConversation?.title && (
-                    <span className="max-w-[160px] sm:max-w-xs truncate rounded-md bg-ice-100 px-2 py-0.5 text-[11px] font-semibold text-navy-800">
+                    <span className="max-w-[120px] sm:max-w-xs truncate rounded-md bg-ice-100 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-navy-800">
                       {activeConversation.title}
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs text-muted">
+                <p className="mt-0.5 text-[11px] sm:text-xs text-muted truncate">
                   {selectedDocId
-                    ? `Scoped to: ${documents.find((d) => d.id === selectedDocId)?.title || 'Selected Record'}`
+                    ? `Scoped: ${documents.find((d) => d.id === selectedDocId)?.title || 'Selected Record'}`
                     : 'Clinical AI Assistant'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 type="button"
                 onClick={openHistory}
@@ -970,9 +974,10 @@ export default function CopilotPage() {
                 <History className="size-3.5 text-brand-600" />
                 <span>History ({conversations.length})</span>
               </button>
-              <Badge tone="brand">
+              <Badge tone="brand" className="text-[10px] sm:text-xs px-2 py-0.5">
                 <span className="size-1.5 rounded-full bg-brand-600" />
-                Live AI Copilot
+                <span className="hidden sm:inline">Live AI Copilot</span>
+                <span className="sm:hidden">Live AI</span>
               </Badge>
             </div>
           </header>
@@ -1109,7 +1114,7 @@ export default function CopilotPage() {
               </div>
             )}
 
-            <form onSubmit={submit} className="relative flex items-center gap-2 rounded-2xl border border-ice-200 bg-white p-2 shadow-xs transition focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100">
+            <form onSubmit={submit} className="relative flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-ice-200 bg-white p-1.5 sm:p-2 shadow-xs transition focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100">
               {/* Attach Records Menu Popover */}
               <div ref={attachMenuRef} className="relative">
                 <button
@@ -1118,19 +1123,19 @@ export default function CopilotPage() {
                   aria-label="Attach medical record"
                   title="Attach medical record"
                   className={cn(
-                    'grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
+                    'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
                     selectedDocId
                       ? 'border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100'
                       : 'border-transparent text-navy-700 hover:bg-ice-100'
                   )}
                 >
-                  <Plus className={cn('size-5 transition-transform duration-200', isAttachMenuOpen && 'rotate-45')} />
+                  <Plus className={cn('size-4.5 sm:size-5 transition-transform duration-200', isAttachMenuOpen && 'rotate-45')} />
                 </button>
 
                 {isAttachMenuOpen && (
                   <div
                     role="menu"
-                    className="absolute bottom-full left-0 mb-3 w-[calc(100vw-2.5rem)] max-w-sm sm:w-96 rounded-2xl border border-ice-200 bg-white p-3 shadow-pop z-30"
+                    className="absolute bottom-full left-0 mb-3 w-[calc(100vw-1.5rem)] max-w-sm sm:w-96 rounded-2xl border border-ice-200 bg-white p-3 shadow-pop z-30"
                   >
                     <div className="flex items-center justify-between border-b border-ice-100 pb-2.5">
                       <div className="flex items-center gap-2">
@@ -1255,7 +1260,7 @@ export default function CopilotPage() {
                      ? `${t('copilot.attached_document', 'Referencing Document:')} ${documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title || documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name || 'attached record'}…`
                      : t('copilot.placeholder', 'Ask about your lab results, doctor notes, or medical terms…')
                  }
-                className="max-h-32 min-h-[44px] flex-1 resize-none bg-transparent px-2.5 sm:px-3 py-2.5 text-base sm:text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none"
+                className="max-h-32 min-h-[40px] sm:min-h-[44px] flex-1 resize-none bg-transparent px-2 sm:px-3 py-2 sm:py-2.5 text-base sm:text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none"
               />
 
               {/* Voice Input Microphone Button */}
@@ -1274,7 +1279,7 @@ export default function CopilotPage() {
                     : t('copilot.mic_start', 'Start voice input')
                 }
                 className={cn(
-                  'grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
+                  'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
                   recordingState === 'recording'
                     ? 'border-rose-300 bg-rose-50 text-rose-600 animate-pulse'
                     : recordingState === 'transcribing'
@@ -1283,11 +1288,11 @@ export default function CopilotPage() {
                 )}
               >
                 {recordingState === 'recording' ? (
-                  <Square className="size-4 fill-rose-600 text-rose-600" />
+                  <Square className="size-3.5 sm:size-4 fill-rose-600 text-rose-600" />
                 ) : recordingState === 'transcribing' ? (
                   <Loader2 className="size-4 animate-spin text-brand-600" />
                 ) : (
-                  <Mic className="size-4.5" />
+                  <Mic className="size-4 sm:size-4.5" />
                 )}
               </button>
 
@@ -1295,9 +1300,9 @@ export default function CopilotPage() {
                 type="submit"
                 disabled={!input.trim() || thinking || recordingState === 'recording'}
                 aria-label={t('copilot.send_btn', 'Send message')}
-                className={cn('grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl transition', input.trim() && !thinking && recordingState !== 'recording' ? 'bg-navy-900 text-white hover:bg-navy-800 cursor-pointer' : 'cursor-not-allowed bg-ice-100 text-muted')}
+                className={cn('grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition', input.trim() && !thinking && recordingState !== 'recording' ? 'bg-navy-900 text-white hover:bg-navy-800 cursor-pointer' : 'cursor-not-allowed bg-ice-100 text-muted')}
               >
-                <Send className="size-4" />
+                <Send className="size-3.5 sm:size-4" />
               </button>
             </form>
           </div>
@@ -1857,44 +1862,50 @@ function ClinicalMarkdownRenderer({ content }) {
             return (
               <div
                 key={index}
-                className="my-3.5 max-w-full overflow-x-auto rounded-2xl border border-ice-200 bg-white shadow-xs"
+                className="my-3 max-w-full overflow-hidden rounded-xl sm:rounded-2xl border border-ice-200 bg-white shadow-2xs"
               >
-                <table className="w-full min-w-[500px] border-collapse text-left text-xs">
-                  {block.headers && (
-                    <thead>
-                      <tr className="border-b border-ice-200 bg-ice-50/90">
-                        {block.headers.map((h, hIdx) => (
-                          <th
-                            key={hIdx}
-                            className="px-3.5 py-2.5 font-bold tracking-tight text-navy-900"
-                          >
-                            <InlineMarkdown text={h} />
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                  )}
-                  <tbody className="divide-y divide-ice-100">
-                    {block.rows.map((row, rIdx) => (
-                      <tr
-                        key={rIdx}
-                        className={cn(
-                          'transition-colors hover:bg-brand-50/30',
-                          rIdx % 2 === 1 ? 'bg-ice-50/25' : 'bg-white'
-                        )}
-                      >
-                        {row.map((cell, cIdx) => (
-                          <td
-                            key={cIdx}
-                            className="px-3.5 py-2.5 align-top leading-5 text-navy-850"
-                          >
-                            <InlineMarkdown text={cell} isCell />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="flex sm:hidden items-center justify-between bg-ice-50/80 px-3 py-1 text-[10px] font-semibold text-muted border-b border-ice-100">
+                  <span>Clinical Table</span>
+                  <span className="text-brand-600">Scroll ↔</span>
+                </div>
+                <div className="overflow-x-auto touch-pan-x">
+                  <table className="w-full min-w-[320px] sm:min-w-[480px] border-collapse text-left text-xs">
+                    {block.headers && (
+                      <thead>
+                        <tr className="border-b border-ice-200 bg-ice-50/90">
+                          {block.headers.map((h, hIdx) => (
+                            <th
+                              key={hIdx}
+                              className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 font-bold tracking-tight text-navy-900 text-[11px] sm:text-xs"
+                            >
+                              <InlineMarkdown text={h} />
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                    )}
+                    <tbody className="divide-y divide-ice-100">
+                      {block.rows.map((row, rIdx) => (
+                        <tr
+                          key={rIdx}
+                          className={cn(
+                            'transition-colors hover:bg-brand-50/30',
+                            rIdx % 2 === 1 ? 'bg-ice-50/25' : 'bg-white'
+                          )}
+                        >
+                          {row.map((cell, cIdx) => (
+                            <td
+                              key={cIdx}
+                              className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 align-top leading-5 text-navy-850 text-[11px] sm:text-xs"
+                            >
+                              <InlineMarkdown text={cell} isCell />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )
 
@@ -1954,27 +1965,27 @@ function ChatBubble({ message, documents, isLiveAuth }) {
     : null
 
   return (
-    <div className={cn('flex items-start gap-3', isUser && 'flex-row-reverse')}>
+    <div className={cn('flex items-start gap-2 sm:gap-3', isUser && 'flex-row-reverse')}>
       <span
         className={cn(
-          'grid size-9 shrink-0 place-items-center rounded-xl',
+          'grid size-7.5 sm:size-9 shrink-0 place-items-center rounded-xl',
           isUser ? 'bg-navy-900 text-white' : 'bg-brand-100 text-brand-700'
         )}
       >
         {isUser ? (
-          <UserRound className="size-4" />
+          <UserRound className="size-3.5 sm:size-4" />
         ) : (
           <SafeImage
             src="/images/ai-assistant.png"
             alt=""
-            className="size-9 overflow-hidden rounded-xl"
+            className="size-7.5 sm:size-9 overflow-hidden rounded-xl"
             imgClassName="size-full object-cover"
           />
         )}
       </span>
       <div
         className={cn(
-          'w-full max-w-[95%] sm:max-w-[90%] xl:max-w-[88%] rounded-2xl p-4 sm:p-5',
+          'w-full max-w-[94%] sm:max-w-[90%] xl:max-w-[88%] rounded-2xl p-3 sm:p-5',
           isUser
             ? 'rounded-tr-md bg-navy-900 text-white'
             : 'rounded-tl-md border border-ice-200 bg-white text-navy-900 shadow-xs'

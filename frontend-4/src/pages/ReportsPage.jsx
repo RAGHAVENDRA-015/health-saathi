@@ -59,9 +59,12 @@ function TrendChart({ series, selectedName, onSelect }) {
   }
 
   const points = [...active.points].sort((a, b) => a.date.localeCompare(b.date))
+  const [selectedPointIndex, setSelectedPointIndex] = useState(points.length - 1)
+  const currentPoint = points[selectedPointIndex] ?? points[points.length - 1]
+
   const width = 640
-  const height = 238
-  const pad = { top: 20, right: 26, bottom: 48, left: 52 }
+  const height = 240
+  const pad = { top: 24, right: 28, bottom: 48, left: 52 }
   const chartWidth = width - pad.left - pad.right
   const chartHeight = height - pad.top - pad.bottom
   const values = points.map((point) => point.value)
@@ -72,43 +75,214 @@ function TrendChart({ series, selectedName, onSelect }) {
   const max = rawMax + padding
   const x = (index) => pad.left + (points.length === 1 ? chartWidth / 2 : (index / (points.length - 1)) * chartWidth)
   const y = (value) => pad.top + ((max - value) / (max - min)) * chartHeight
+
   const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(point.value)}`).join(' ')
+  const areaPath = `${path} L ${x(points.length - 1)} ${height - pad.bottom} L ${x(0)} ${height - pad.bottom} Z`
   const ticks = Array.from({ length: 4 }, (_, index) => max - ((max - min) * index) / 3)
+
+  const latestVal = points[points.length - 1].value
+  const prevVal = points.length > 1 ? points[points.length - 2].value : null
+  const trendDiff = prevVal !== null ? Number((latestVal - prevVal).toFixed(2)) : null
 
   return (
     <div className="min-w-0">
-      <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h3 className="font-bold text-navy-900">Result trends</h3>
-          <p className="mt-0.5 text-xs leading-5 text-muted">Compare historical sample values with matching units.</p>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-navy-900 text-base">Result trends</h3>
+            <span className="rounded-full bg-brand-50 border border-brand-200 px-2 py-0.5 text-[10px] font-bold text-brand-700">
+              {points.length} Tests
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs leading-5 text-muted">Historical sample values with matching units.</p>
         </div>
         <label className="flex items-center gap-2 text-sm font-semibold text-navy-800">
           <span className="sr-only">Select test for trend</span>
-          <select className="field h-10 max-w-full sm:max-w-52" value={active.name} onChange={(event) => onSelect(event.target.value)}>
-            {availableSeries.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
+          <select
+            className="field h-10 w-full sm:w-auto sm:max-w-60 text-xs sm:text-sm font-semibold"
+            value={active.name}
+            onChange={(event) => {
+              onSelect(event.target.value)
+              setSelectedPointIndex(0)
+            }}
+          >
+            {availableSeries.map((item) => (
+              <option key={item.name} value={item.name}>
+                {item.name} ({item.unit})
+              </option>
+            ))}
           </select>
         </label>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-ice-200 bg-white/75 p-2 sm:p-3">
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${active.name} trend in ${active.unit}`} className="block w-full">
-          {ticks.map((tick, index) => (
-            <g key={index}>
-              <line x1={pad.left} y1={y(tick)} x2={width - pad.right} y2={y(tick)} stroke="#e1edf8" strokeDasharray="4 5" />
-              <text x={pad.left - 10} y={y(tick) + 4} textAnchor="end" fontSize="11" fill="#627a9b">{Number(tick.toFixed(2)).toString()}</text>
-            </g>
-          ))}
-          <path d={path} fill="none" stroke="#168ed0" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-          {points.map((point, index) => (
-            <g key={`${point.date}-${index}`}>
-              <circle cx={x(index)} cy={y(point.value)} r="5.5" fill="#ffffff" stroke="#168ed0" strokeWidth="3" />
-              <text x={x(index)} y={y(point.value) - 12} textAnchor="middle" fontSize="11" fontWeight="700" fill="#0a2a5e">{formatValue(point.value)}</text>
-              <text x={x(index)} y={height - 20} textAnchor="middle" fontSize="11" fill="#627a9b">{formatDate(point.date)}</text>
-            </g>
-          ))}
-        </svg>
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-1 text-xs text-muted">
+
+      {/* Mobile KPI Summary Strip */}
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="rounded-xl border border-ice-200 bg-white/80 p-2.5 shadow-2xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Inspected Value</p>
+          <p className="mt-0.5 text-base font-extrabold text-brand-700 tabular-nums">
+            {formatValue(currentPoint.value)} <span className="text-[11px] font-medium text-navy-800">{active.unit}</span>
+          </p>
+          <p className="text-[10px] text-muted truncate">{formatDate(currentPoint.date)}</p>
+        </div>
+        <div className="rounded-xl border border-ice-200 bg-white/80 p-2.5 shadow-2xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Latest Reading</p>
+          <p className="mt-0.5 text-base font-extrabold text-navy-900 tabular-nums">
+            {formatValue(latestVal)} <span className="text-[11px] font-medium text-navy-800">{active.unit}</span>
+          </p>
+          <p className="text-[10px] text-muted truncate">{formatDate(points[points.length - 1].date)}</p>
+        </div>
+        <div className="rounded-xl border border-ice-200 bg-white/80 p-2.5 shadow-2xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Historic Range</p>
+          <p className="mt-0.5 text-base font-extrabold text-navy-900 tabular-nums">
+            {formatValue(rawMin)} – {formatValue(rawMax)}
+          </p>
+          <p className="text-[10px] text-muted truncate">Min – Max span</p>
+        </div>
+        <div className="rounded-xl border border-ice-200 bg-white/80 p-2.5 shadow-2xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Recent Delta</p>
+          <div className="mt-0.5 flex items-center gap-1">
+            {trendDiff !== null && trendDiff > 0 ? (
+              <span className="inline-flex items-center text-xs font-bold text-rose-600">
+                <TrendingUp className="size-3.5 mr-0.5" /> +{trendDiff}
+              </span>
+            ) : trendDiff !== null && trendDiff < 0 ? (
+              <span className="inline-flex items-center text-xs font-bold text-emerald-600">
+                <TrendingDown className="size-3.5 mr-0.5" /> {trendDiff}
+              </span>
+            ) : (
+              <span className="text-xs font-bold text-muted">Stable</span>
+            )}
+          </div>
+          <p className="text-[10px] text-muted truncate">vs previous</p>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-ice-200 bg-white/85 p-2 sm:p-3 shadow-xs">
+        <div className="flex sm:hidden items-center justify-between px-2 pb-1 text-[11px] font-medium text-brand-700">
+          <span>Tap data points to inspect values</span>
+          <span>↔ Scroll chart</span>
+        </div>
+
+        <div className="w-full overflow-x-auto touch-pan-x">
+          <div className="min-w-[480px] sm:min-w-full">
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              role="img"
+              aria-label={`${active.name} trend in ${active.unit}`}
+              className="block w-full select-none"
+            >
+              <defs>
+                <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0284c7" stopOpacity="0.22" />
+                  <stop offset="100%" stopColor="#0284c7" stopOpacity="0.01" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid lines and ticks */}
+              {ticks.map((tick, index) => (
+                <g key={index}>
+                  <line
+                    x1={pad.left}
+                    y1={y(tick)}
+                    x2={width - pad.right}
+                    y2={y(tick)}
+                    stroke="#e1edf8"
+                    strokeDasharray="4 5"
+                  />
+                  <text
+                    x={pad.left - 10}
+                    y={y(tick) + 4}
+                    textAnchor="end"
+                    fontSize="11"
+                    fontWeight="500"
+                    fill="#627a9b"
+                  >
+                    {Number(tick.toFixed(2)).toString()}
+                  </text>
+                </g>
+              ))}
+
+              {/* Area gradient under line */}
+              <path d={areaPath} fill="url(#trendGradient)" />
+
+              {/* Trend connecting line */}
+              <path
+                d={path}
+                fill="none"
+                stroke="#0284c7"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Data points */}
+              {points.map((point, index) => {
+                const isSelected = selectedPointIndex === index
+                const px = x(index)
+                const py = y(point.value)
+
+                return (
+                  <g
+                    key={`${point.date}-${index}`}
+                    onClick={() => setSelectedPointIndex(index)}
+                    className="cursor-pointer transition-transform"
+                  >
+                    {/* Generous touch target */}
+                    <circle cx={px} cy={py} r="18" fill="transparent" />
+
+                    {isSelected && (
+                      <circle
+                        cx={px}
+                        cy={py}
+                        r="10"
+                        fill="#0284c7"
+                        fillOpacity="0.2"
+                        className="animate-ping"
+                      />
+                    )}
+
+                    <circle
+                      cx={px}
+                      cy={py}
+                      r={isSelected ? '7' : '5.5'}
+                      fill="#ffffff"
+                      stroke={isSelected ? '#0369a1' : '#0284c7'}
+                      strokeWidth={isSelected ? '4' : '3'}
+                    />
+
+                    {/* Value label */}
+                    <text
+                      x={px}
+                      y={py - 12}
+                      textAnchor="middle"
+                      fontSize={isSelected ? '12' : '11'}
+                      fontWeight="800"
+                      fill={isSelected ? '#0369a1' : '#0a2a5e'}
+                    >
+                      {formatValue(point.value)}
+                    </text>
+
+                    {/* Date label */}
+                    <text
+                      x={px}
+                      y={height - 20}
+                      textAnchor="middle"
+                      fontSize="11"
+                      fontWeight={isSelected ? '700' : '500'}
+                      fill={isSelected ? '#0369a1' : '#627a9b'}
+                    >
+                      {formatDate(point.date)}
+                    </text>
+                  </g>
+                )
+              })}
+            </svg>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ice-100 px-3 pt-2 pb-0.5 text-xs text-muted">
           <span>{points.length} sample measurements</span>
-          <span>Unit: {active.unit || 'Not specified'}</span>
+          <span>Measurement Unit: <strong className="text-navy-900">{active.unit || 'Not specified'}</strong></span>
         </div>
       </div>
     </div>
@@ -305,22 +479,103 @@ export default function ReportsPage() {
         </div>
 
         {filteredResults.length ? (
-          <div className="mt-3 overflow-x-auto rounded-2xl border border-ice-200 bg-white/75">
-            <table className="w-full min-w-[850px] text-left text-sm">
-              <caption className="sr-only">HealthSaathi sample lab measurements and report observations</caption>
-              <thead className="bg-ice-50/90 text-xs text-muted"><tr className="border-b border-ice-200"><th scope="col" className="px-4 py-3 font-semibold">Test / measurement</th><th scope="col" className="px-4 py-3 font-semibold">Result</th><th scope="col" className="px-4 py-3 font-semibold">Reference range</th><th scope="col" className="px-4 py-3 font-semibold">Status</th><th scope="col" className="px-4 py-3 font-semibold">Report date</th><th scope="col" className="px-4 py-3 font-semibold">Action</th></tr></thead>
-              <tbody>{filteredResults.map((item) => (
-                <tr key={item.resultId} className="border-b border-ice-100 last:border-0 hover:bg-ice-50/70">
-                  <th scope="row" className="px-4 py-3.5"><div className="flex min-w-0 items-center gap-3"><LabValueIcon name={item.icon} /><div className="min-w-0"><p className="font-bold text-navy-900">{item.name}</p><p className="mt-0.5 max-w-56 truncate text-xs font-normal text-muted">{item.reportTitle}</p></div></div></th>
-                  <td className="px-4 py-3.5 font-bold tabular-nums text-navy-900">{formatValue(item.value)}{item.unit ? ` ${item.unit}` : ''}</td>
-                  <td className="px-4 py-3.5 text-muted">{item.range || 'Not provided'}{item.range && typeof item.value === 'number' && item.unit ? ` ${item.unit}` : ''}</td>
-                  <td className="px-4 py-3.5"><LabStatusBadge status={item.status} /></td>
-                  <td className="whitespace-nowrap px-4 py-3.5 text-muted">{formatDate(item.date)}</td>
-                  <td className="px-4 py-3.5"><button type="button" onClick={() => setSelectedResultId(item.resultId)} className="rounded-full border border-ice-200 bg-white px-3.5 py-2 text-xs font-bold text-navy-900 hover:border-brand-200 hover:bg-brand-50">View details</button></td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobile View: Responsive Cards (< md) */}
+            <div className="mt-3 space-y-2.5 md:hidden">
+              {filteredResults.map((item) => (
+                <div
+                  key={item.resultId}
+                  className="rounded-2xl border border-ice-200 bg-white/95 p-3.5 shadow-2xs transition hover:border-brand-200"
+                >
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <LabValueIcon name={item.icon} />
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-navy-900 truncate">{item.name}</p>
+                        <p className="text-xs text-muted truncate">{item.reportTitle}</p>
+                      </div>
+                    </div>
+                    <LabStatusBadge status={item.status} />
+                  </div>
+
+                  <div className="mt-3 flex items-baseline justify-between border-t border-ice-100 pt-2.5">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-muted block">Measured Value</span>
+                      <span className="text-base font-extrabold text-navy-900 tabular-nums">
+                        {formatValue(item.value)}{item.unit ? ` ${item.unit}` : ''}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-muted block">Reference Range</span>
+                      <span className="text-xs font-semibold text-navy-800">
+                        {item.range || 'Not provided'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-2.5 flex items-center justify-between border-t border-ice-50 pt-2 text-xs text-muted">
+                    <span className="text-[11px]">{formatDate(item.date)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedResultId(item.resultId)}
+                      className="rounded-lg bg-ice-50 px-3 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 cursor-pointer"
+                    >
+                      View details →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop View: Full Table (>= md) */}
+            <div className="mt-3 hidden md:block overflow-x-auto rounded-2xl border border-ice-200 bg-white/75">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <caption className="sr-only">HealthSaathi sample lab measurements and report observations</caption>
+                <thead className="bg-ice-50/90 text-xs text-muted">
+                  <tr className="border-b border-ice-200">
+                    <th scope="col" className="px-4 py-3 font-semibold">Test / measurement</th>
+                    <th scope="col" className="px-4 py-3 font-semibold">Result</th>
+                    <th scope="col" className="px-4 py-3 font-semibold">Reference range</th>
+                    <th scope="col" className="px-4 py-3 font-semibold">Status</th>
+                    <th scope="col" className="px-4 py-3 font-semibold">Report date</th>
+                    <th scope="col" className="px-4 py-3 font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredResults.map((item) => (
+                    <tr key={item.resultId} className="border-b border-ice-100 last:border-0 hover:bg-ice-50/70">
+                      <th scope="row" className="px-4 py-3.5">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <LabValueIcon name={item.icon} />
+                          <div className="min-w-0">
+                            <p className="font-bold text-navy-900">{item.name}</p>
+                            <p className="mt-0.5 max-w-56 truncate text-xs font-normal text-muted">{item.reportTitle}</p>
+                          </div>
+                        </div>
+                      </th>
+                      <td className="px-4 py-3.5 font-bold tabular-nums text-navy-900">
+                        {formatValue(item.value)}{item.unit ? ` ${item.unit}` : ''}
+                      </td>
+                      <td className="px-4 py-3.5 text-muted">
+                        {item.range || 'Not provided'}{item.range && typeof item.value === 'number' && item.unit ? ` ${item.unit}` : ''}
+                      </td>
+                      <td className="px-4 py-3.5"><LabStatusBadge status={item.status} /></td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-muted">{formatDate(item.date)}</td>
+                      <td className="px-4 py-3.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedResultId(item.resultId)}
+                          className="rounded-full border border-ice-200 bg-white px-3.5 py-2 text-xs font-bold text-navy-900 hover:border-brand-200 hover:bg-brand-50 cursor-pointer"
+                        >
+                          View details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <div className="mt-5 rounded-2xl border border-dashed border-ice-300 bg-ice-50/60 p-5 sm:p-8">
             <EmptyState icon={Search} title="No matching results" description={category !== 'all' ? `There are no structured result values in the ${categories.find((item) => item.id === category)?.label.toLowerCase()} category in this demo dataset, or your search narrowed them out.` : 'Try another test name, report title, or search term.'} action={<Button variant="secondary" onClick={clearFilters}>Clear filters</Button>} />
@@ -346,9 +601,15 @@ function SummaryCard({ icon: Icon, label, value, caption, iconTone = 'blue' }) {
     violet: 'bg-violet-100 text-violet-700',
   }
   return (
-    <article className="panel flex min-w-0 items-center gap-3 p-4 sm:gap-4 sm:p-5">
-      <span className={cn('grid size-11 shrink-0 place-items-center rounded-2xl sm:size-12', tones[iconTone])}><Icon className="size-5 sm:size-6" aria-hidden="true" /></span>
-      <div className="min-w-0"><p className="truncate text-xs font-semibold text-muted sm:text-sm">{label}</p><p className="mt-0.5 text-2xl font-extrabold tracking-tight text-navy-900 tabular-nums">{value}</p><p className="mt-0.5 text-[11px] leading-4 text-muted sm:text-xs">{caption}</p></div>
+    <article className="panel flex min-w-0 items-center gap-2.5 p-3 sm:gap-4 sm:p-5">
+      <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl sm:size-12 sm:rounded-2xl', tones[iconTone])}>
+        <Icon className="size-5 sm:size-6" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[11px] font-semibold text-muted sm:text-sm">{label}</p>
+        <p className="mt-0.5 text-xl font-extrabold tracking-tight text-navy-900 tabular-nums sm:text-2xl">{value}</p>
+        <p className="mt-0.5 truncate text-[10px] leading-4 text-muted sm:text-xs">{caption}</p>
+      </div>
     </article>
   )
 }
