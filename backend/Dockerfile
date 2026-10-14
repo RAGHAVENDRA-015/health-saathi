@@ -5,7 +5,6 @@ FROM node:20-bookworm-slim
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NODE_ENV=production
-ENV PORT=8080
 
 WORKDIR /app
 
@@ -52,7 +51,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:${PORT}/health/live || exit 1
+  CMD curl -f http://localhost:${PORT:-8080}/health/live || exit 1
 
 # Start production server
 CMD ["node", "dist/server.js"]
