@@ -77,8 +77,11 @@
 }
 
 @layer base {
-  html {
+  html,
+  body {
     -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   body {

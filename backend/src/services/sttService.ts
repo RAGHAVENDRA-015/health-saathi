@@ -35,7 +35,7 @@ export class SttService {
 
   constructor(apiKeyOverride?: string) {
     const env = getEnv();
-    this.apiKey = apiKeyOverride ?? env.GROQ_API_KEY_STT;
+    this.apiKey = apiKeyOverride ?? env.GROQ_API_KEY_STT ?? env.GROQ_API_KEY;
     this.model = env.GROQ_STT_MODEL || 'whisper-large-v3-turbo';
 
     if (this.apiKey) {

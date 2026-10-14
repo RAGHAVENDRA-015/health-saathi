@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ArrowRight, Check, Eye, EyeOff, FileText,
@@ -18,13 +18,31 @@ export default function AuthPage({ mode = 'login' }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useHealthData()
-  const { login, loginWithGoogle, register, resetPassword } = useAuth()
+  const { isAuthenticated, isLoading, login, loginWithGoogle, register, resetPassword } = useAuth()
   const { notify } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', consent: false })
   useDocumentTitle(isForgot ? 'Reset password' : isRegister ? 'Create account' : 'Login')
+
+  // Auto-redirect if already signed in
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isLoading, isAuthenticated, navigate])
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-ice-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-10 animate-spin rounded-full border-3 border-brand-200 border-t-brand-600" />
+          <p className="text-xs font-semibold text-muted">Checking authentication…</p>
+        </div>
+      </div>
+    )
+  }
 
   const setField = (field, value) => setForm((current) => ({ ...current, [field]: value }))
 

@@ -1,14 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Activity, ArrowRight, Check, ChevronRight,
-  FileText, Menu, MessageCircleHeart, Play, ShieldCheck,
+  FileText, Menu, MessageCircleHeart, ShieldCheck,
   Sparkles, Stethoscope, UploadCloud, X,
 } from 'lucide-react'
 import { Logo } from '../components/layout/Logo.jsx'
-import { Modal } from '../components/common/Modal.jsx'
 import { SafeImage } from '../components/common/SafeImage.jsx'
 import { Button } from '../components/common/Button.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 
 const features = [
@@ -34,17 +34,35 @@ const steps = [
 export default function LandingPage() {
   useDocumentTitle('Understand Your Health, Better')
   const navigate = useNavigate()
+  const { isAuthenticated, isLoading } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [demoOpen, setDemoOpen] = useState(false)
+
+  // Seamless redirect: if user is already authenticated, take them directly to home / dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isLoading, isAuthenticated, navigate])
 
   const scrollTo = (id) => {
     setMenuOpen(false)
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-ice-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-10 animate-spin rounded-full border-3 border-brand-200 border-t-brand-600" />
+          <p className="text-xs font-semibold text-muted">Restoring your session…</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <main className="min-h-screen overflow-hidden text-navy-900">
-      <header className="relative z-20 mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-12 lg:py-6">
+    <main className="min-h-screen overflow-x-hidden text-navy-900">
+      <header className="relative z-20 mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-4 sm:px-8 lg:px-12 lg:py-6">
         <Logo />
         <nav aria-label="Main navigation" className="hidden items-center gap-8 lg:flex">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-sm font-semibold text-brand-700">Home</button>
@@ -78,27 +96,27 @@ export default function LandingPage() {
         )}
       </header>
 
-      <section className="relative mx-auto grid max-w-[1500px] items-center gap-2 px-5 pb-10 pt-3 sm:px-8 md:pb-16 lg:grid-cols-[0.94fr_1.06fr] lg:px-12 lg:pb-20 lg:pt-5">
+      <section className="relative mx-auto grid max-w-[1500px] items-center gap-2 px-4 pb-10 pt-3 sm:px-8 md:pb-16 lg:grid-cols-[0.94fr_1.06fr] lg:px-12 lg:pb-20 lg:pt-5">
         <div aria-hidden="true" className="pointer-events-none absolute -left-48 top-8 size-[28rem] rounded-full bg-brand-200/35 blur-3xl" />
-        <div className="relative z-10 py-8 md:py-12 lg:py-14">
+        <div className="relative z-10 py-6 md:py-12 lg:py-14">
           <span className="inline-flex items-center gap-2 rounded-full border border-white bg-white/75 px-3.5 py-2 text-xs font-bold text-brand-700 shadow-card">
             <span className="grid size-5 place-items-center rounded-full bg-accent-400 text-navy-950"><Sparkles className="size-3" /></span>
             YOUR PERSONAL HEALTH COPILOT
           </span>
-          <h1 className="mt-6 max-w-2xl text-[3.2rem] leading-[0.98] font-extrabold tracking-[-0.055em] text-navy-900 sm:text-6xl lg:text-[4.7rem] xl:text-[5.3rem]">
+          <h1 className="mt-6 max-w-2xl text-[2.8rem] leading-[1.0] font-extrabold tracking-[-0.055em] text-navy-900 sm:text-6xl lg:text-[4.7rem] xl:text-[5.3rem]">
             Understand Your Health, <span className="bg-linear-to-r from-brand-700 via-brand-500 to-emerald-400 bg-clip-text text-transparent">Better.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
+          <p className="mt-5 max-w-xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
             Bring your medical documents together, explore report details and follow your health journey in one calm, easy-to-use workspace.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button to="/register" size="lg">Get Started <ArrowRight aria-hidden="true" /></Button>
-            <Button variant="secondary" size="lg" onClick={() => setDemoOpen(true)}><Play className="fill-current" aria-hidden="true" /> Watch Demo</Button>
+            <Button to="/register" size="lg" className="w-full sm:w-auto justify-center">Get Started <ArrowRight aria-hidden="true" /></Button>
+            <Button to="/login" variant="secondary" size="lg" className="w-full sm:w-auto justify-center">Login to Account</Button>
           </div>
           <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3 text-xs font-semibold text-navy-800/80 sm:text-sm">
             <span className="inline-flex items-center gap-2"><Check className="size-4 text-emerald-600" /> Organized records</span>
             <span className="inline-flex items-center gap-2"><Check className="size-4 text-emerald-600" /> Plain-language context</span>
-            <span className="inline-flex items-center gap-2"><Check className="size-4 text-emerald-600" /> Demo-first privacy</span>
+            <span className="inline-flex items-center gap-2"><Check className="size-4 text-emerald-600" /> Secure multi-tenant access</span>
           </div>
         </div>
 
@@ -191,15 +209,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <Modal open={demoOpen} onClose={() => setDemoOpen(false)} title="A simple journey to more clarity" description="This preview explains the intended experience. AI processing is simulated in this frontend phase.">
-        <div className="flex flex-col gap-3 p-6 pt-5">
-          {steps.map((step, index) => {
-            const Icon = [UploadCloud, FileText, MessageCircleHeart][index]
-            return <div key={step.n} className="flex gap-4 rounded-2xl border border-ice-200 bg-ice-50/70 p-4"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700"><Icon className="size-5" /></span><div><p className="text-xs font-bold text-brand-700">Step {step.n}</p><p className="text-sm font-extrabold text-navy-900">{step.title}</p><p className="mt-1 text-sm leading-5 text-muted">{step.text}</p></div></div>
-          })}
-          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end"><Button variant="secondary" onClick={() => setDemoOpen(false)}>Close</Button><Button to="/dashboard" onClick={() => setDemoOpen(false)}>Explore Dashboard <ArrowRight /></Button></div>
-        </div>
-      </Modal>
     </main>
   )
 }

@@ -9,6 +9,8 @@ import { setAppLanguage } from '../i18n/index.js'
 const AUTH_TOKEN_KEY = 'healthsaathi_auth_token'
 const REFRESH_TOKEN_KEY = 'healthsaathi_refresh_token'
 const DEMO_MODE_KEY = 'healthsaathi_demo_mode'
+const SESSION_TIMESTAMP_KEY = 'healthsaathi_session_timestamp'
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000 // 7-day persistent session policy
 
 const AuthContext = createContext(null)
 
@@ -16,7 +18,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => storageService.get(AUTH_TOKEN_KEY, null, (v) => typeof v === 'string'))
   const [refreshToken, setRefreshToken] = useState(() => storageService.get(REFRESH_TOKEN_KEY, null, (v) => typeof v === 'string'))
   const [isDemoMode, setIsDemoMode] = useState(false)
-  const [user, setUser] = useState(mockUser)
+  const [user, setUser] = useState(() => storageService.get('profile', mockUser))
   const [isLoading, setIsLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
 
@@ -35,6 +37,7 @@ export function AuthProvider({ children }) {
           if (refreshed.idToken) {
             setToken(refreshed.idToken)
             storageService.set(AUTH_TOKEN_KEY, refreshed.idToken)
+            storageService.set(SESSION_TIMESTAMP_KEY, Date.now())
             if (refreshed.refreshToken) {
               setRefreshToken(refreshed.refreshToken)
               storageService.set(REFRESH_TOKEN_KEY, refreshed.refreshToken)
@@ -53,18 +56,83 @@ export function AuthProvider({ children }) {
         setRefreshToken(null)
         storageService.remove(AUTH_TOKEN_KEY)
         storageService.remove(REFRESH_TOKEN_KEY)
+        storageService.remove(SESSION_TIMESTAMP_KEY)
       }
     })
     return unsubscribe
   }, [isDemoMode, token, refreshToken])
 
-  // Initialize auth: verify token with backend if present, else default to demo or unauthenticated
+  // Initialize auth: check 7-day session policy, restore token & sync backend profile
   useEffect(() => {
     let isMounted = true
 
     async function initAuth() {
       setIsLoading(true)
-      if (token && !isDemoMode) {
+
+      // 1. Verify 7-day session policy
+      const sessionTimestamp = storageService.get(SESSION_TIMESTAMP_KEY, null)
+      if (sessionTimestamp && Date.now() - sessionTimestamp > SEVEN_DAYS_MS) {
+        console.info('[AuthContext] 7-day session expired. Clearing credentials.')
+        if (isMounted) {
+          setToken(null)
+          setRefreshToken(null)
+          storageService.remove(AUTH_TOKEN_KEY)
+          storageService.remove(REFRESH_TOKEN_KEY)
+          storageService.remove(SESSION_TIMESTAMP_KEY)
+          storageService.remove('profile')
+          setUser(mockUser)
+          setIsLoading(false)
+        }
+        return
+      }
+
+      const existingToken = token || storageService.get(AUTH_TOKEN_KEY, null)
+      const existingRefreshToken = refreshToken || storageService.get(REFRESH_TOKEN_KEY, null)
+
+      if ((existingToken || existingRefreshToken) && !isDemoMode) {
+        let activeToken = existingToken
+
+        // Proactively refresh the Firebase ID token if a refresh token is present
+        if (existingRefreshToken) {
+          try {
+            const refreshed = await firebaseAuth.refreshToken(existingRefreshToken)
+            if (refreshed?.idToken) {
+              activeToken = refreshed.idToken
+              if (isMounted) {
+                setToken(refreshed.idToken)
+                storageService.set(AUTH_TOKEN_KEY, refreshed.idToken)
+                storageService.set(SESSION_TIMESTAMP_KEY, Date.now())
+                if (refreshed.refreshToken) {
+                  setRefreshToken(refreshed.refreshToken)
+                  storageService.set(REFRESH_TOKEN_KEY, refreshed.refreshToken)
+                }
+              }
+            }
+          } catch (refreshErr) {
+            console.warn('[AuthContext] Token refresh warning during init:', refreshErr?.message || refreshErr)
+            const msg = String(refreshErr?.message || '')
+            if (
+              msg.includes('TOKEN_EXPIRED') ||
+              msg.includes('USER_NOT_FOUND') ||
+              msg.includes('USER_DISABLED') ||
+              msg.includes('INVALID_REFRESH_TOKEN')
+            ) {
+              if (isMounted) {
+                setToken(null)
+                setRefreshToken(null)
+                storageService.remove(AUTH_TOKEN_KEY)
+                storageService.remove(REFRESH_TOKEN_KEY)
+                storageService.remove(SESSION_TIMESTAMP_KEY)
+                storageService.remove('profile')
+                setUser(mockUser)
+                setIsLoading(false)
+              }
+              return
+            }
+          }
+        }
+
+        // Fetch latest profile from backend
         try {
           const profile = await userApi.getProfile()
           if (isMounted && profile) {
@@ -84,47 +152,14 @@ export function AuthProvider({ children }) {
             setAppLanguage(lang)
           }
         } catch (err) {
-          console.warn('[AuthContext] Failed to validate token with backend:', err.message)
+          console.warn('[AuthContext] Backend profile fetch warning, preserving active session:', err.message)
+          // Keep active session and use cached profile
           if (isMounted) {
-            if (refreshToken) {
-              try {
-                const refreshed = await firebaseAuth.refreshToken(refreshToken)
-                if (refreshed.idToken) {
-                  setToken(refreshed.idToken)
-                  storageService.set(AUTH_TOKEN_KEY, refreshed.idToken)
-                  const profile = await userApi.getProfile()
-                  if (profile) {
-                    const cached = storageService.get('profile', null)
-                    const resolved = {
-                      ...cached,
-                      ...profile,
-                      avatar: profile.avatar || cached?.avatar || '',
-                      photoUrl: profile.avatar || cached?.avatar || '',
-                      displayName: profile.displayName || cached?.displayName || '',
-                      fullName: profile.fullName || cached?.fullName || profile.displayName || '',
-                      firstName: profile.firstName || cached?.firstName || (profile.displayName ? profile.displayName.split(' ')[0] : 'User'),
-                    }
-                    setUser(resolved)
-                    storageService.set('profile', resolved)
-                    const lang = resolved.preferences?.language || resolved.preferences?.preferredLanguage || 'en'
-                    setAppLanguage(lang)
-                  }
-                  setIsLoading(false)
-                  return
-                }
-              } catch (refreshErr) {
-                console.warn('[AuthContext] Initial refresh failed:', refreshErr)
-              }
-            }
-
-            if (env.enableMockFallback) {
-              console.info('[AuthContext] Backend unavailable; enabling demo mode fallback.')
-              setIsDemoMode(true)
-              setUser(storageService.get('profile', mockUser))
-            } else {
-              setToken(null)
-              storageService.remove(AUTH_TOKEN_KEY)
-              setAuthError('Authentication session expired or invalid.')
+            const cached = storageService.get('profile', null)
+            if (cached) {
+              setUser(cached)
+              const lang = cached.preferences?.language || cached.preferences?.preferredLanguage || 'en'
+              setAppLanguage(lang)
             }
           }
         }
@@ -146,6 +181,7 @@ export function AuthProvider({ children }) {
     setToken(newToken)
     if (newToken) {
       storageService.set(AUTH_TOKEN_KEY, newToken)
+      storageService.set(SESSION_TIMESTAMP_KEY, Date.now())
       setIsDemoMode(false)
       storageService.set(DEMO_MODE_KEY, false)
     } else {
@@ -158,6 +194,7 @@ export function AuthProvider({ children }) {
     } else if (!newToken) {
       setRefreshToken(null)
       storageService.remove(REFRESH_TOKEN_KEY)
+      storageService.remove(SESSION_TIMESTAMP_KEY)
     }
   }, [])
 
@@ -304,6 +341,7 @@ export function AuthProvider({ children }) {
     setRefreshToken(null)
     storageService.remove(AUTH_TOKEN_KEY)
     storageService.remove(REFRESH_TOKEN_KEY)
+    storageService.remove(SESSION_TIMESTAMP_KEY)
     storageService.remove('profile')
     storageService.remove('documents')
     storageService.remove('medicines')

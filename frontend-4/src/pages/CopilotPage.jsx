@@ -941,11 +941,11 @@ export default function CopilotPage() {
         }
       />
 
-      <section className="panel flex h-[calc(100dvh-13.5rem)] min-h-[480px] max-h-[820px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
-          <header className="flex items-center justify-between gap-3 border-b border-ice-100 bg-white/60 px-4 py-3 sm:px-6">
-            <div className="flex items-center gap-3">
-              <SafeImage src="/images/ai-assistant.png" alt="" className="size-12 overflow-hidden rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
-              <div>
+      <section className="panel flex h-[calc(100dvh-10.5rem)] min-h-[420px] sm:h-[calc(100dvh-13.5rem)] sm:min-h-[480px] max-h-[860px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
+          <header className="flex items-center justify-between gap-2.5 border-b border-ice-100 bg-white/60 px-3.5 py-2.5 sm:px-6 sm:py-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <SafeImage src="/images/ai-assistant.png" alt="" className="size-9 sm:size-12 shrink-0 overflow-hidden rounded-xl sm:rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-extrabold text-navy-900">Your HealthSaathi</h2>
                   {activeConversation?.title && (
@@ -1130,7 +1130,7 @@ export default function CopilotPage() {
                 {isAttachMenuOpen && (
                   <div
                     role="menu"
-                    className="absolute bottom-full left-0 mb-3 w-80 sm:w-96 rounded-2xl border border-ice-200 bg-white p-3 shadow-pop z-30"
+                    className="absolute bottom-full left-0 mb-3 w-[calc(100vw-2.5rem)] max-w-sm sm:w-96 rounded-2xl border border-ice-200 bg-white p-3 shadow-pop z-30"
                   >
                     <div className="flex items-center justify-between border-b border-ice-100 pb-2.5">
                       <div className="flex items-center gap-2">
@@ -1255,7 +1255,7 @@ export default function CopilotPage() {
                      ? `${t('copilot.attached_document', 'Referencing Document:')} ${documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title || documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name || 'attached record'}…`
                      : t('copilot.placeholder', 'Ask about your lab results, doctor notes, or medical terms…')
                  }
-                className="max-h-32 min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none"
+                className="max-h-32 min-h-[44px] flex-1 resize-none bg-transparent px-2.5 sm:px-3 py-2.5 text-base sm:text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none"
               />
 
               {/* Voice Input Microphone Button */}
@@ -1311,7 +1311,7 @@ export default function CopilotPage() {
             onClick={() => setIsHistoryOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10">
+          <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
             <aside className="w-screen max-w-md bg-white shadow-2xl flex flex-col border-l border-ice-200 animate-in slide-in-from-right duration-300">
               {/* Drawer Header */}
               <div className="flex items-center justify-between border-b border-ice-100 px-5 py-4">

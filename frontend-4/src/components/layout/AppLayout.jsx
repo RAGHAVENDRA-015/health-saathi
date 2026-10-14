@@ -40,7 +40,7 @@ export function AppLayout() {
         Skip to content
       </a>
 
-      <div className="mx-auto flex max-w-[1680px] gap-5 p-3 sm:p-4 lg:gap-6 lg:p-5">
+      <div className="mx-auto flex max-w-[1680px] gap-3.5 sm:gap-5 p-2 sm:p-4 lg:gap-6 lg:p-5">
         <aside className="panel sticky top-5 hidden h-[calc(100dvh-2.5rem)] w-64 shrink-0 lg:block">
           <SidebarContent />
         </aside>

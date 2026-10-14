@@ -7,20 +7,20 @@ import { ProfileMenu } from './ProfileMenu.jsx'
 
 export function TopBar({ onOpenNav }) {
   return (
-    <header className="flex flex-wrap items-center gap-3 md:flex-nowrap md:gap-4">
+    <header className="flex flex-wrap items-center gap-2 sm:gap-3 md:flex-nowrap md:gap-4">
       <button
         type="button"
         onClick={onOpenNav}
-        className="glass grid size-11 place-items-center rounded-2xl text-navy-900 lg:hidden"
+        className="glass grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl sm:rounded-2xl text-navy-900 lg:hidden cursor-pointer"
       >
         <Menu className="size-5" aria-hidden="true" />
         <span className="sr-only">Open navigation</span>
       </button>
-      <Logo compact className="lg:hidden" />
+      <Logo compact className="lg:hidden shrink-0" />
 
       <GlobalSearch className="order-last w-full md:order-none md:flex-1 md:max-w-2xl lg:max-w-3xl" />
 
-      <div className="ml-auto flex items-center gap-2 sm:gap-3">
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-3 shrink-0">
         <LanguageSwitcher />
         <NotificationsMenu />
         <ProfileMenu />
