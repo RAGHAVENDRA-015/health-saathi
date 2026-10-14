@@ -268,27 +268,47 @@ function formatClinicalCell(cell, cIdx) {
   const trimmed = (cell || '').trim()
   const lower = trimmed.toLowerCase()
 
-  // Format clinical values in result columns with subtle status badges
+  // Format clinical values in result / status columns with clear visual indicator pill badges
   if (cIdx > 0) {
-    if (/^(negative|nil|normal|clear|absent|none|not\s+detected)$/i.test(lower)) {
+    if (/^(critical|panic|danger|severe)$/i.test(lower)) {
       return (
-        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/80">
-          {trimmed}
+        <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-extrabold text-rose-800 ring-1 ring-rose-400 shadow-2xs animate-pulse">
+          <span className="size-1.5 rounded-full bg-rose-600" />
+          Critical
         </span>
       )
     }
 
-    if (/^(positive|present|detected|elevated|abnormal|high)$/i.test(lower)) {
+    if (/^(positive|present|detected|elevated|abnormal|high|above\s+range)$/i.test(lower)) {
       return (
-        <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200/80">
-          {trimmed}
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300 shadow-2xs">
+          <span className="text-[10px]">▲</span>
+          High
+        </span>
+      )
+    }
+
+    if (/^(low|below\s+range|deficient|decreased)$/i.test(lower)) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-0.5 text-[11px] font-bold text-sky-700 ring-1 ring-sky-200 shadow-2xs">
+          <span className="text-[10px]">▼</span>
+          Low
+        </span>
+      )
+    }
+
+    if (/^(negative|nil|normal|clear|absent|none|not\s+detected|within\s+range|optimal)$/i.test(lower)) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200 shadow-2xs">
+          <span className="text-[10px]">✓</span>
+          Normal
         </span>
       )
     }
 
     if (/^(trace|borderline|moderate|slight|weakly\s+positive)$/i.test(lower)) {
       return (
-        <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200/80">
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200 shadow-2xs">
           {trimmed}
         </span>
       )

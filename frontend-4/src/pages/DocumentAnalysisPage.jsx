@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeft, CheckCircle2, Download, FileImage, FileQuestion, FileText, Info,
+  Activity, ArrowLeft, CheckCircle2, Download, FileImage, FileQuestion, FileText, Info,
   Sparkles, Trash2,
 } from 'lucide-react'
 import { Badge, LabStatusBadge, StatusBadge, TypeBadge } from '../components/common/Badge.jsx'
@@ -39,12 +39,30 @@ export default function DocumentAnalysisPage() {
     if (isLiveAuth && documentId) {
       documentsApi.getFindings(documentId)
         .then((res) => {
-          if (Array.isArray(res)) setBackendFindings(res)
+          const list = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : []
+          if (list.length) setBackendFindings(list)
         })
         .catch(() => {})
     }
   }, [isLiveAuth, documentId])
   useDocumentTitle(document?.title ?? 'Record not found')
+
+  const extractedLabValues = useMemo(() => {
+    if (backendFindings && backendFindings.length > 0) {
+      return backendFindings.map((f) => ({
+        id: f._id || f.testName,
+        name: f.testName,
+        value: f.result,
+        unit: f.unit || '',
+        range: f.referenceRange || (f.referenceLow !== undefined && f.referenceHigh !== undefined ? `${f.referenceLow} – ${f.referenceHigh} ${f.unit || ''}` : 'Standard range'),
+        status: f.status,
+      }))
+    }
+    if (report?.labValues && report.labValues.length > 0) {
+      return report.labValues
+    }
+    return []
+  }, [backendFindings, report])
 
   if (!document) {
     return (
@@ -69,6 +87,7 @@ export default function DocumentAnalysisPage() {
 
   const tabs = [
     { id: 'summary', label: t('dashboard.ai_analysis', 'AI Summary') },
+    ...(extractedLabValues.length > 0 ? [{ id: 'values', label: 'Extracted Lab Values' }] : []),
   ]
 
   return (
@@ -166,26 +185,87 @@ export default function DocumentAnalysisPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5"><p className="flex items-start gap-2 text-xs leading-5 text-amber-900"><Info className="mt-0.5 size-4 shrink-0" />This is a static sample summary, not analysis of the selected upload and not medical advice.</p></div>
+                  {extractedLabValues.length > 0 && (
+                    <div className="mt-5 rounded-2xl border border-ice-200 bg-white p-4 sm:p-5 shadow-xs">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-ice-100 pb-3">
+                        <div>
+                          <h3 className="text-sm font-extrabold text-navy-900 flex items-center gap-2">
+                            <Activity className="size-4 text-brand-600" />
+                            Automated Reference Range Analysis
+                          </h3>
+                          <p className="text-xs text-muted mt-0.5">Automated visual indicators evaluated against laboratory reference boundaries</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700 ring-1 ring-brand-200">
+                          <Sparkles className="size-3 text-brand-600" />
+                          Automated Lab Extraction
+                        </span>
+                      </div>
+                      <LabValuesTable values={extractedLabValues} />
+                    </div>
+                  )}
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5"><p className="flex items-start gap-2 text-xs leading-5 text-amber-900"><Info className="mt-0.5 size-4 shrink-0" />This is clinical AI extraction for patient empowerment; please discuss results with a qualified healthcare professional.</p></div>
                 </>
               ) : document.summary ? (
-                <div className="rounded-2xl border border-brand-100 bg-brand-50/60 p-3 sm:p-5 shadow-2xs">
-                  <div className="flex items-center gap-2.5 border-b border-brand-200/60 pb-2.5 mb-3">
-                    <span className="grid size-8 sm:size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-700 shadow-2xs">
-                      <SafeImage src="/images/ai-assistant.png" alt="" className="size-7 sm:size-9 overflow-hidden rounded-lg" imgClassName="size-full object-cover" />
-                    </span>
-                    <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-                      <p className="text-sm font-extrabold text-navy-900">Document AI Summary</p>
-                      <Badge tone="brand">AI Analysis</Badge>
+                <>
+                  <div className="rounded-2xl border border-brand-100 bg-brand-50/60 p-3 sm:p-5 shadow-2xs">
+                    <div className="flex items-center gap-2.5 border-b border-brand-200/60 pb-2.5 mb-3">
+                      <span className="grid size-8 sm:size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-700 shadow-2xs">
+                        <SafeImage src="/images/ai-assistant.png" alt="" className="size-7 sm:size-9 overflow-hidden rounded-lg" imgClassName="size-full object-cover" />
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                        <p className="text-sm font-extrabold text-navy-900">Document AI Summary</p>
+                        <Badge tone="brand">AI Analysis</Badge>
+                      </div>
+                    </div>
+                    <div className="w-full min-w-0">
+                      <ClinicalMarkdownRenderer content={document.summary} />
                     </div>
                   </div>
-                  <div className="w-full min-w-0">
-                    <ClinicalMarkdownRenderer content={document.summary} />
-                  </div>
-                </div>
+
+                  {extractedLabValues.length > 0 && (
+                    <div className="mt-5 rounded-2xl border border-ice-200 bg-white p-4 sm:p-5 shadow-xs">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-ice-100 pb-3">
+                        <div>
+                          <h3 className="text-sm font-extrabold text-navy-900 flex items-center gap-2">
+                            <Activity className="size-4 text-brand-600" />
+                            Extracted Laboratory Values & Reference Ranges
+                          </h3>
+                          <p className="text-xs text-muted mt-0.5">Automated visual indicators evaluated against laboratory reference boundaries</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                          ✓ Range Flags Active
+                        </span>
+                      </div>
+                      <LabValuesTable values={extractedLabValues} />
+                    </div>
+                  )}
+                </>
               ) : (
                 <EmptyState icon={Sparkles} title="Processing or metadata only" description="AI summary will be generated once document OCR completes." action={<Button to={`/copilot?q=${encodeURIComponent(`What can I review in ${document.title}?`)}&doc=${encodeURIComponent(document.id || document._id)}`} variant="secondary">Ask Copilot about this record</Button>} />
               )}
+            </div>
+          )}
+
+          {activeTab === 'values' && (
+            <div id="panel-values" role="tabpanel" aria-labelledby="tab-values" className="pt-4 sm:pt-5">
+              <div className="rounded-2xl border border-ice-200 bg-white p-4 sm:p-5 shadow-xs">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-ice-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-extrabold text-navy-900 flex items-center gap-2">
+                      <Activity className="size-4 text-brand-600" />
+                      Extracted Laboratory Values & Reference Range Flags
+                    </h3>
+                    <p className="text-xs text-muted mt-0.5">
+                      Visual indicators (High, Low, Critical, Normal) flagged automatically against standard medical ranges
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700 ring-1 ring-brand-200">
+                    <Sparkles className="size-3 text-brand-600" />
+                    Automated Analysis
+                  </span>
+                </div>
+                <LabValuesTable values={extractedLabValues} />
+              </div>
             </div>
           )}
         </section>
@@ -254,12 +334,44 @@ function LocalFilePreview({ file, title, fileName }) {
 }
 
 export function LabValuesTable({ values }) {
+  if (!values || values.length === 0) return null
   return (
-    <div className="mt-5 overflow-x-auto">
-      <table className="w-full min-w-[520px] text-left text-sm">
-        <caption className="sr-only">Laboratory values</caption>
-        <thead className="text-xs text-muted"><tr className="border-b border-ice-100"><th scope="col" className="py-2.5 pr-4 font-semibold">Test</th><th scope="col" className="py-2.5 pr-4 font-semibold">Result</th><th scope="col" className="py-2.5 pr-4 font-semibold">Reference range</th><th scope="col" className="py-2.5 font-semibold">Status</th></tr></thead>
-        <tbody>{values.map((value) => <tr key={value.id} className="border-b border-ice-100 last:border-0"><th scope="row" className="py-3 pr-4 font-semibold text-navy-900">{value.name}</th><td className="py-3 pr-4 tabular-nums text-navy-800">{value.value} {value.unit}</td><td className="py-3 pr-4 tabular-nums text-muted">{value.range} {value.unit}</td><td className="py-3"><LabStatusBadge status={value.status} /></td></tr>)}</tbody>
+    <div className="mt-4 overflow-x-auto rounded-xl border border-ice-200">
+      <table className="w-full min-w-[540px] text-left text-xs sm:text-sm">
+        <caption className="sr-only">Laboratory extracted values and reference ranges</caption>
+        <thead className="bg-ice-50/80 text-xs font-bold text-navy-900 border-b border-ice-200">
+          <tr>
+            <th scope="col" className="py-3 px-4 font-bold">Test Parameter</th>
+            <th scope="col" className="py-3 px-4 font-bold">Patient Result</th>
+            <th scope="col" className="py-3 px-4 font-bold">Standard Reference Range</th>
+            <th scope="col" className="py-3 px-4 font-bold">Clinical Indicator</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-ice-100 bg-white">
+          {values.map((value) => {
+            const rawRange = value.range ? String(value.range).trim() : 'Standard range'
+            const formattedRange = value.unit && !rawRange.toLowerCase().includes(value.unit.toLowerCase())
+              ? `${rawRange} ${value.unit}`
+              : rawRange
+
+            return (
+              <tr key={value.id} className="transition-colors hover:bg-brand-50/20">
+                <th scope="row" className="py-3.5 px-4 font-bold text-navy-950">
+                  {value.name}
+                </th>
+                <td className="py-3.5 px-4 font-extrabold text-navy-900 tabular-nums">
+                  {value.value} {value.unit}
+                </td>
+                <td className="py-3.5 px-4 text-muted tabular-nums font-medium">
+                  {formattedRange}
+                </td>
+                <td className="py-3.5 px-4">
+                  <LabStatusBadge status={value.status} />
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
       </table>
     </div>
   )

@@ -1,4 +1,6 @@
 export const mockMedicinesData = [
+  { id: 'med-warfarin', name: 'Warfarin', strength: '5 mg', frequency: 'Once daily', timing: 'At bedtime', startDate: '2026-09-15', endDate: '', status: 'current', notes: 'Oral anticoagulant. Requires strict adherence and regular INR monitoring.' },
+  { id: 'med-aspirin', name: 'Aspirin (Ecosprin)', strength: '75 mg', frequency: 'Once daily', timing: 'After lunch', startDate: '2026-10-02', endDate: '', status: 'current', notes: 'Cardioprotective antiplatelet therapy prescribed post-cardiac assessment.' },
   { id: 'med-cetirizine', name: 'Cetirizine', strength: '10 mg', frequency: 'Once daily', timing: 'After dinner', startDate: '2026-10-01', endDate: '', status: 'current', notes: 'Demo entry — confirm every medicine with a healthcare professional.' },
   { id: 'med-vitamin-d3', name: 'Vitamin D3', strength: '60,000 IU', frequency: 'Once weekly', timing: 'Sunday morning', startDate: '2026-09-20', endDate: '', status: 'current', notes: 'Sample schedule only; not a prescription.' },
   { id: 'med-paracetamol', name: 'Paracetamol', strength: '500 mg', frequency: 'As needed', timing: 'As directed by clinician', startDate: '2026-08-10', endDate: '', status: 'past', notes: 'Archived demo medicine.' },

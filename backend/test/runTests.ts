@@ -27,6 +27,7 @@ import { runDocumentClassificationTests } from './documentClassificationAndCopil
 import { runNotificationTests } from './notifications.test';
 import { runMultilingualTests } from './multilingualAndPreferences.test';
 import { runSttTests } from './stt.test';
+import { runClinicalIntelligenceTests } from './clinicalIntelligence.test';
 
 // Simple PDF generator using raw PDF 1.4 syntax (no external heavy libraries needed for tests)
 function createSimpleDigitalPdf(textContent: string): Buffer {
@@ -214,6 +215,11 @@ async function runAllTests() {
 
   // ─── Run Groq Speech-to-Text (STT) Test Suite ────────────────────────────
   await runSttTests();
+
+  // ─── Run Clinical Intelligence & Safety Test Suite ───────────────────────
+  const clinicalResults = await runClinicalIntelligenceTests();
+  if (clinicalResults.failed > 0) failed += clinicalResults.failed;
+  passed += clinicalResults.passed;
 
   console.log(`\n========================================`);
   console.log(`Test Results: ${passed} PASSED, ${failed} FAILED`);

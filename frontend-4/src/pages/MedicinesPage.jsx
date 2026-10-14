@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BellRing, CalendarClock, Check, Clock3, Edit3, Info, Pill, Plus, Search, Trash2 } from 'lucide-react'
+import { AlertTriangle, BellRing, CalendarClock, Check, Clock3, Edit3, Info, Pill, Plus, Search, ShieldAlert, Sparkles, Trash2 } from 'lucide-react'
 import { Badge } from '../components/common/Badge.jsx'
 import { Button } from '../components/common/Button.jsx'
 import { ConfirmDialog } from '../components/common/ConfirmDialog.jsx'
@@ -12,6 +12,7 @@ import { useHealthData } from '../context/HealthDataContext.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import { formatDate } from '../utils/documents.js'
+import { detectDrugInteractions } from '../utils/drugInteractions.js'
 
 const blankMedicine = { name: '', strength: '', frequency: 'Once daily', timing: 'After breakfast', startDate: new Date().toISOString().slice(0, 10), endDate: '', status: 'current', notes: '' }
 const tabs = [{ id: 'current', label: 'Current' }, { id: 'past', label: 'Past' }, { id: 'all', label: 'All medicines' }]
@@ -28,6 +29,8 @@ export default function MedicinesPage() {
   const [form, setForm] = useState(blankMedicine)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [errors, setErrors] = useState({})
+
+  const drugInteractions = useMemo(() => detectDrugInteractions(medicines), [medicines])
 
   const visibleMedicines = useMemo(() => medicines.filter((item) => {
     const matchesTab = tab === 'all' || item.status === tab
@@ -89,6 +92,66 @@ export default function MedicinesPage() {
           </div>
           <label className="relative block w-full sm:max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" /><span className="sr-only">Search medicines</span><input className="field pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search medicines..." /></label>
         </div>
+
+        {drugInteractions.length > 0 && (
+          <div className="mt-5 overflow-hidden rounded-2xl border border-rose-300 bg-gradient-to-br from-rose-50/95 via-amber-50/70 to-rose-50/95 p-4 sm:p-5 shadow-xs">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-rose-600 text-white shadow-xs">
+                  <ShieldAlert className="size-5" />
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm sm:text-base font-extrabold text-rose-950">
+                      Prescription Drug-Drug Interaction Warning
+                    </h2>
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide bg-rose-200 text-rose-900 ring-1 ring-rose-400 animate-pulse">
+                      <span className="size-1.5 rounded-full bg-rose-700" />
+                      {drugInteractions[0].severity} CLINICAL RISK
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-rose-900/90 leading-relaxed">
+                    Automated clinical safety screening detected potential adverse interactions between active medications in your schedule.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to={`/copilot?q=${encodeURIComponent(`Explain the clinical interaction between ${drugInteractions[0].drugA.name} and ${drugInteractions[0].drugB.name} and what precautions I should take`)}`}
+                className="inline-flex items-center gap-1.5 self-start shrink-0 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-rose-900 border border-rose-200 shadow-2xs hover:bg-rose-50 transition"
+              >
+                <Sparkles className="size-3.5 text-brand-600" />
+                Ask AI Copilot
+              </Link>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {drugInteractions.map((item) => (
+                <div key={item.id} className="rounded-xl border border-rose-200/90 bg-white/95 p-3.5 text-xs text-navy-900 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-100 pb-2">
+                    <span className="font-extrabold text-rose-900 flex items-center gap-1.5 text-xs sm:text-sm">
+                      <AlertTriangle className="size-4 text-rose-600 shrink-0" />
+                      {item.title}
+                    </span>
+                    <span className="font-mono text-[11px] font-bold text-navy-800 bg-ice-50 px-2.5 py-1 rounded-md border border-ice-200">
+                      {item.drugA.name} ({item.drugA.strength || 'active'}) + {item.drugB.name} ({item.drugB.strength || 'active'})
+                    </span>
+                  </div>
+                  <p className="leading-relaxed text-navy-850">
+                    <strong className="text-navy-950 font-bold">Pharmacological Mechanism: </strong>
+                    {item.mechanism}
+                  </p>
+                  <div className="rounded-lg bg-rose-50/80 p-2.5 text-[11px] text-rose-950 leading-relaxed border border-rose-100">
+                    <strong className="font-bold">Recommended Safety Action: </strong>
+                    {item.clinicalAction}
+                  </div>
+                  <div className="text-[11px] text-muted italic">
+                    💡 {item.doctorQuestion}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {visibleMedicines.length ? <div className="mt-5 grid gap-3 lg:grid-cols-2">
           {visibleMedicines.map((item) => <article key={item.id} className="rounded-2xl border border-ice-200 bg-white/90 p-4 transition hover:border-brand-200 hover:shadow-card sm:p-5">

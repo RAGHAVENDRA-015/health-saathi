@@ -2,6 +2,7 @@ export const LAB_STATUSES = {
   normal: { label: 'Within range' },
   low: { label: 'Below range' },
   high: { label: 'Above range' },
+  critical: { label: 'Critical alert' },
   reported: { label: 'Report available' },
   unavailable: { label: 'Range unavailable' },
 }
@@ -12,25 +13,35 @@ export const LAB_STATUSES = {
  * demo status and are never guessed from their wording.
  */
 export function deriveLabStatus(item) {
-  if (!item || typeof item.value !== 'number' || !Number.isFinite(item.value)) {
+  if (!item) return 'unavailable'
+  const explicitStatus = String(item.status || '').toLowerCase()
+  if (explicitStatus === 'critical') return 'critical'
+
+  if (typeof item.value !== 'number' || !Number.isFinite(item.value)) {
     return item?.status ?? 'reported'
   }
 
   const range = String(item.range ?? item.referenceRange ?? '').trim()
-  if (!range) return 'unavailable'
+  if (!range) return item?.status ?? 'unavailable'
 
   const below = range.match(/^(?:below|less than|<)\s*(-?\d+(?:\.\d+)?)/i)
-  if (below) return item.value < Number(below[1]) ? 'normal' : 'high'
+  if (below) {
+    const limit = Number(below[1])
+    return item.value < limit ? 'normal' : item.value >= limit * 1.5 ? 'critical' : 'high'
+  }
 
   const above = range.match(/^(?:above|greater than|>)\s*(-?\d+(?:\.\d+)?)/i)
-  if (above) return item.value > Number(above[1]) ? 'normal' : 'low'
+  if (above) {
+    const limit = Number(above[1])
+    return item.value > limit ? 'normal' : item.value <= limit * 0.5 ? 'critical' : 'low'
+  }
 
   const interval = range.match(/(-?\d+(?:\.\d+)?)\s*(?:–|—|-|to)\s*(-?\d+(?:\.\d+)?)/i)
   if (interval) {
     const lower = Number(interval[1])
     const upper = Number(interval[2])
-    if (item.value < lower) return 'low'
-    if (item.value > upper) return 'high'
+    if (item.value < lower) return item.value <= lower * 0.6 ? 'critical' : 'low'
+    if (item.value > upper) return item.value >= upper * 1.8 ? 'critical' : 'high'
     return 'normal'
   }
 
@@ -46,12 +57,12 @@ export const mockReports = [
     category: 'blood',
     date: '2026-10-08',
     summary:
-      'Routine comprehensive metabolic and hematology panel. Most values sit within standard reference ranges; Vitamin D is slightly below optimal range (28 ng/mL) and fasting triglycerides are mildly elevated (162 mg/dL).',
+      'Routine comprehensive metabolic and hematology panel. Fasting blood glucose is elevated at 145 mg/dL (normal range 70–99 mg/dL). Most other values sit within standard reference ranges; Vitamin D is slightly below optimal range (28 ng/mL) and fasting triglycerides are mildly elevated (162 mg/dL).',
     suggestion:
-      'Vitamin D is below standard optimal levels. Discuss dietary options or appropriate vitamin D supplementation with your doctor.',
+      'Fasting blood glucose is 145 mg/dL (above standard 70–99 mg/dL reference range). Discuss lifestyle adjustments and an HbA1c screening with your physician to monitor glycemic control.',
     labValues: [
+      { id: 'glucose-fasting', name: 'Fasting Blood Glucose', value: 145, unit: 'mg/dL', range: '70 – 99', status: 'high', icon: 'droplets', featured: true, group: 'Metabolic' },
       { id: 'hemoglobin', name: 'Hemoglobin', value: 13.2, unit: 'g/dL', range: '12.0 – 15.5', status: 'normal', icon: 'droplet', featured: true, group: 'Blood count' },
-      { id: 'glucose-fasting', name: 'Blood Sugar (Fasting)', value: 92, unit: 'mg/dL', range: '70 – 99', status: 'normal', icon: 'droplets', featured: true, group: 'Metabolic' },
       { id: 'cholesterol-total', name: 'Cholesterol (Total)', value: 189, unit: 'mg/dL', range: 'Below 200', status: 'normal', icon: 'heart', featured: true, group: 'Lipid profile' },
       { id: 'vitamin-d', name: 'Vitamin D', value: 28, unit: 'ng/mL', range: '30 – 100', status: 'low', icon: 'sun', featured: true, group: 'Vitamins' },
       { id: 'wbc', name: 'White Blood Cells', value: 7.1, unit: '×10³/µL', range: '4.0 – 11.0', status: 'normal', icon: 'droplet', group: 'Blood count' },
