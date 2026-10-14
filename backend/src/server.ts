@@ -8,23 +8,29 @@ import { startReminderScheduler } from './workers/reminderWorker';
 async function main() {
   const env = getEnv();
 
-  // Initialize Firebase Admin
-  initFirebase();
-
-  // Connect MongoDB
-  await connectMongo();
-
-  // Start background document processing worker & reminder scheduler
-  startWorkerDaemon();
-  startReminderScheduler();
-
-  // Create and start Express server
+  // 1. Create and start Express server immediately so Cloud Run/liveness checks pass
   const app = createApp();
   const server = app.listen(env.PORT, '0.0.0.0', () => {
     console.log(`🚀 HealthSaathi API running on port ${env.PORT} [${env.NODE_ENV}]`);
     console.log(`   Health: http://localhost:${env.PORT}/health/live`);
     console.log(`   API base: http://localhost:${env.PORT}/api/v1`);
   });
+
+  // 2. Initialize Firebase Admin
+  try {
+    initFirebase();
+  } catch (err) {
+    console.error('⚠️ [startup] Firebase Admin init error:', err);
+  }
+
+  // 3. Connect MongoDB & start workers
+  try {
+    await connectMongo();
+    startWorkerDaemon();
+    startReminderScheduler();
+  } catch (err) {
+    console.error('❌ [startup] MongoDB connection failed:', err);
+  }
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

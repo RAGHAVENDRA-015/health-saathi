@@ -35,6 +35,13 @@ export function createApp(): express.Application {
         // Allow server-to-server or same-origin (no origin header)
         if (!origin) return callback(null, true);
         if (allowedOrigins.includes(origin)) return callback(null, true);
+        if (
+          origin.endsWith('.vercel.app') ||
+          origin.endsWith('.web.app') ||
+          origin.endsWith('.firebaseapp.com')
+        ) {
+          return callback(null, true);
+        }
 
         // In non-production, permit all localhost and local LAN IPs (192.168.x.x, 10.x.x.x, etc.)
         if (env.NODE_ENV !== 'production') {
