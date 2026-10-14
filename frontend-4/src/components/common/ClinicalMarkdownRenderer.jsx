@@ -264,6 +264,40 @@ export function InlineMarkdown({ text, isCell = false }) {
   )
 }
 
+function formatClinicalCell(cell, cIdx) {
+  const trimmed = (cell || '').trim()
+  const lower = trimmed.toLowerCase()
+
+  // Format clinical values in result columns with subtle status badges
+  if (cIdx > 0) {
+    if (/^(negative|nil|normal|clear|absent|none|not\s+detected)$/i.test(lower)) {
+      return (
+        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/80">
+          {trimmed}
+        </span>
+      )
+    }
+
+    if (/^(positive|present|detected|elevated|abnormal|high)$/i.test(lower)) {
+      return (
+        <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200/80">
+          {trimmed}
+        </span>
+      )
+    }
+
+    if (/^(trace|borderline|moderate|slight|weakly\s+positive)$/i.test(lower)) {
+      return (
+        <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200/80">
+          {trimmed}
+        </span>
+      )
+    }
+  }
+
+  return <InlineMarkdown text={cell} isCell />
+}
+
 export function ClinicalMarkdownRenderer({ content }) {
   if (!content) return null
   const blocks = parseMarkdownBlocks(content)
@@ -318,50 +352,65 @@ export function ClinicalMarkdownRenderer({ content }) {
               </pre>
             )
 
-          case 'table':
+          case 'table': {
+            const numCols = block.headers ? block.headers.length : (block.rows[0]?.length || 2)
+            const isTwoCol = numCols === 2
+
             return (
               <div
                 key={index}
-                className="my-3.5 max-w-full overflow-x-auto rounded-2xl border border-ice-200 bg-white shadow-xs"
+                className="my-3 w-full max-w-full overflow-hidden rounded-xl sm:rounded-2xl border border-ice-200 bg-white shadow-xs"
               >
-                <table className="w-full min-w-[500px] border-collapse text-left text-xs">
-                  {block.headers && (
-                    <thead>
-                      <tr className="border-b border-ice-200 bg-ice-50/90">
-                        {block.headers.map((h, hIdx) => (
-                          <th
-                            key={hIdx}
-                            className="px-3.5 py-2.5 font-bold tracking-tight text-navy-900"
-                          >
-                            <InlineMarkdown text={h} />
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                  )}
-                  <tbody className="divide-y divide-ice-100">
-                    {block.rows.map((row, rIdx) => (
-                      <tr
-                        key={rIdx}
-                        className={cn(
-                          'transition-colors hover:bg-brand-50/30',
-                          rIdx % 2 === 1 ? 'bg-ice-50/25' : 'bg-white'
-                        )}
-                      >
-                        {row.map((cell, cIdx) => (
-                          <td
-                            key={cIdx}
-                            className="px-3.5 py-2.5 align-top leading-5 text-navy-850"
-                          >
-                            <InlineMarkdown text={cell} isCell />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className={cn('w-full border-collapse text-left text-xs', !isTwoCol && 'min-w-[440px]')}>
+                    {block.headers && (
+                      <thead>
+                        <tr className="border-b border-ice-200 bg-gradient-to-r from-ice-50 via-brand-50/40 to-ice-50">
+                          {block.headers.map((h, hIdx) => (
+                            <th
+                              key={hIdx}
+                              className={cn(
+                                'px-3 py-2 sm:px-3.5 sm:py-2.5 font-bold tracking-tight text-navy-900 text-[11px] sm:text-xs',
+                                isTwoCol && hIdx === 0 && 'w-[58%] sm:w-[50%]',
+                                isTwoCol && hIdx === 1 && 'w-[42%] sm:w-[50%]'
+                              )}
+                            >
+                              <InlineMarkdown text={h} />
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                    )}
+                    <tbody className="divide-y divide-ice-100">
+                      {block.rows.map((row, rIdx) => (
+                        <tr
+                          key={rIdx}
+                          className={cn(
+                            'transition-colors hover:bg-brand-50/30',
+                            rIdx % 2 === 1 ? 'bg-ice-50/20' : 'bg-white'
+                          )}
+                        >
+                          {row.map((cell, cIdx) => (
+                            <td
+                              key={cIdx}
+                              className={cn(
+                                'px-3 py-2 sm:px-3.5 sm:py-2.5 align-middle leading-snug',
+                                cIdx === 0 ? 'font-semibold text-navy-950 text-xs sm:text-[13px]' : 'text-navy-850 text-xs sm:text-[13px]',
+                                isTwoCol && cIdx === 0 && 'w-[58%] sm:w-[50%]',
+                                isTwoCol && cIdx === 1 && 'w-[42%] sm:w-[50%]'
+                              )}
+                            >
+                              {formatClinicalCell(cell, cIdx)}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )
+          }
 
           case 'ul':
             return (

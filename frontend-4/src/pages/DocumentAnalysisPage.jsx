@@ -116,7 +116,7 @@ export default function DocumentAnalysisPage() {
           </section>
         </div>
 
-        <section className="panel min-w-0 p-4 sm:p-6">
+        <section className="panel min-w-0 p-3 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2"><Sparkles className="size-5 text-brand-600" /><h2 className="text-lg font-extrabold text-navy-900">Report workspace</h2></div>
@@ -144,13 +144,17 @@ export default function DocumentAnalysisPage() {
           </div>
 
           {activeTab === 'summary' && (
-            <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" className="pt-5">
+            <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" className="pt-4 sm:pt-5">
               {report ? (
                 <>
-                  <div className="flex items-start gap-3.5 rounded-2xl border border-brand-100 bg-brand-50/60 p-4 sm:p-5 shadow-2xs">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-700 shadow-2xs"><SafeImage src="/images/ai-assistant.png" alt="" className="size-9 overflow-hidden rounded-lg" imgClassName="size-full object-cover" /></span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-extrabold text-navy-900 mb-2">Sample report summary</p>
+                  <div className="rounded-2xl border border-brand-100 bg-brand-50/60 p-3 sm:p-5 shadow-2xs">
+                    <div className="flex items-center gap-2.5 border-b border-brand-200/60 pb-2.5 mb-3">
+                      <span className="grid size-8 sm:size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-700 shadow-2xs">
+                        <SafeImage src="/images/ai-assistant.png" alt="" className="size-7 sm:size-9 overflow-hidden rounded-lg" imgClassName="size-full object-cover" />
+                      </span>
+                      <p className="text-sm font-extrabold text-navy-900">Sample report summary</p>
+                    </div>
+                    <div className="w-full min-w-0">
                       <ClinicalMarkdownRenderer content={report.summary} />
                     </div>
                   </div>
@@ -165,15 +169,17 @@ export default function DocumentAnalysisPage() {
                   <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5"><p className="flex items-start gap-2 text-xs leading-5 text-amber-900"><Info className="mt-0.5 size-4 shrink-0" />This is a static sample summary, not analysis of the selected upload and not medical advice.</p></div>
                 </>
               ) : document.summary ? (
-                <div className="flex items-start gap-3.5 rounded-2xl border border-brand-100 bg-brand-50/60 p-4 sm:p-5 shadow-2xs">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-700 shadow-2xs">
-                    <SafeImage src="/images/ai-assistant.png" alt="" className="size-9 overflow-hidden rounded-lg" imgClassName="size-full object-cover" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 border-b border-brand-200/60 pb-2.5 mb-3">
+                <div className="rounded-2xl border border-brand-100 bg-brand-50/60 p-3 sm:p-5 shadow-2xs">
+                  <div className="flex items-center gap-2.5 border-b border-brand-200/60 pb-2.5 mb-3">
+                    <span className="grid size-8 sm:size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-700 shadow-2xs">
+                      <SafeImage src="/images/ai-assistant.png" alt="" className="size-7 sm:size-9 overflow-hidden rounded-lg" imgClassName="size-full object-cover" />
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
                       <p className="text-sm font-extrabold text-navy-900">Document AI Summary</p>
                       <Badge tone="brand">AI Analysis</Badge>
                     </div>
+                  </div>
+                  <div className="w-full min-w-0">
                     <ClinicalMarkdownRenderer content={document.summary} />
                   </div>
                 </div>
