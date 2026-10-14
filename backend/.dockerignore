@@ -1,0 +1,27 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+*.env.local
+*.env.production
+firebase-service-account*.json
+uploads
+tmp
+temp
+.git
+.github
+.vscode
+.idea
+.DS_Store
+*.log
+npm-debug.log*
+
+# Python caches and local venv
+ocr/.venv
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+test
