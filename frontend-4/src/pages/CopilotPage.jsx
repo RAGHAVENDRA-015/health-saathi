@@ -1180,51 +1180,56 @@ export default function CopilotPage() {
   )
 
   return (
-    <div className="flex flex-col gap-3 sm:gap-5">
-      <PageHeader
-        eyebrow={t('copilot.eyebrow', 'Your personal health companion')}
-        title={t('copilot.title', 'AI Health Copilot')}
-        actions={
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Button
-              variant="secondary"
-              onClick={openHistory}
-              className="relative cursor-pointer text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2"
-            >
-              <History className="size-3.5 sm:size-4" aria-hidden="true" />
-              <span>{t('copilot.history', 'History')}</span>
-              {conversations.length > 0 && (
-                <span className="ml-1 rounded-full bg-brand-50 border border-brand-200 px-1.5 py-0.2 text-[10px] font-bold text-brand-700">
-                  {conversations.length}
-                </span>
-              )}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={startNewConversation}
-              className="cursor-pointer text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2"
-            >
-              <Plus className="size-3.5 sm:size-4" aria-hidden="true" />
-              <span>{t('copilot.new_chat', 'New chat')}</span>
-            </Button>
-          </div>
-        }
-      />
+    <div className="flex flex-col gap-0 sm:gap-5">
+      {/* PageHeader — hidden on mobile to reclaim screen real-estate */}
+      <div className="hidden sm:block">
+        <PageHeader
+          eyebrow={t('copilot.eyebrow', 'Your personal health companion')}
+          title={t('copilot.title', 'AI Health Copilot')}
+          actions={
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button
+                variant="secondary"
+                onClick={openHistory}
+                className="relative cursor-pointer text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2"
+              >
+                <History className="size-3.5 sm:size-4" aria-hidden="true" />
+                <span>{t('copilot.history', 'History')}</span>
+                {conversations.length > 0 && (
+                  <span className="ml-1 rounded-full bg-brand-50 border border-brand-200 px-1.5 py-0.2 text-[10px] font-bold text-brand-700">
+                    {conversations.length}
+                  </span>
+                )}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={startNewConversation}
+                className="cursor-pointer text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2"
+              >
+                <Plus className="size-3.5 sm:size-4" aria-hidden="true" />
+                <span>{t('copilot.new_chat', 'New chat')}</span>
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
-      <section className="panel flex h-[calc(100dvh-9.5rem)] min-h-[420px] sm:h-[calc(100dvh-13.5rem)] sm:min-h-[480px] max-h-[860px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
-          <header className="flex items-center justify-between gap-2 border-b border-ice-100 bg-white/60 px-2.5 py-2 sm:px-6 sm:py-3">
+      <section className="panel flex h-[calc(100dvh-4rem)] sm:h-[calc(100dvh-13.5rem)] sm:min-h-[480px] max-h-[860px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
+          <header className="flex items-center justify-between gap-2 border-b border-ice-100 bg-white/60 px-2.5 py-1.5 sm:px-6 sm:py-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <SafeImage src="/images/ai-assistant.png" alt="" className="size-8 sm:size-11 shrink-0 overflow-hidden rounded-lg sm:rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
+              <SafeImage src="/images/ai-assistant.png" alt="" className="size-7 sm:size-11 shrink-0 overflow-hidden rounded-lg sm:rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <h2 className="text-xs sm:text-sm font-extrabold text-navy-900 truncate">Your HealthSaathi</h2>
+                  {/* Conversation title shown inline on desktop only — no gray chip on mobile */}
                   {activeConversation?.title && (
-                    <span className="max-w-[120px] sm:max-w-xs truncate rounded-md bg-ice-100 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-navy-800">
+                    <span className="hidden sm:inline-block max-w-xs truncate rounded-md bg-ice-100 px-2 py-0.5 text-[11px] font-semibold text-navy-800">
                       {activeConversation.title}
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 text-[11px] sm:text-xs text-muted truncate">
+                {/* Subtitle only visible on desktop */}
+                <p className="hidden sm:block mt-0.5 text-xs text-muted truncate">
                   {selectedDocId
                     ? `Scoped: ${documents.find((d) => d.id === selectedDocId)?.title || 'Selected Record'}`
                     : 'Clinical AI Assistant'}
@@ -1232,13 +1237,24 @@ export default function CopilotPage() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* History button — mobile shows icon only, desktop shows text */}
               <button
                 type="button"
                 onClick={openHistory}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-ice-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-navy-700 hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-700 transition cursor-pointer shadow-2xs"
+                aria-label="Chat history"
+                className="inline-flex items-center gap-1 rounded-xl border border-ice-200 bg-white/80 px-2 py-1.5 sm:px-3 text-xs font-semibold text-navy-700 hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-700 transition cursor-pointer shadow-2xs"
               >
                 <History className="size-3.5 text-brand-600" />
-                <span>History ({conversations.length})</span>
+                <span className="hidden sm:inline">History ({conversations.length})</span>
+              </button>
+              {/* New chat button on mobile */}
+              <button
+                type="button"
+                onClick={startNewConversation}
+                aria-label="New chat"
+                className="sm:hidden inline-flex items-center gap-1 rounded-xl border border-ice-200 bg-white/80 px-2 py-1.5 text-xs font-semibold text-navy-700 hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-700 transition cursor-pointer shadow-2xs"
+              >
+                <Plus className="size-3.5 text-brand-600" />
               </button>
               <Badge tone="brand" className="text-[10px] sm:text-xs px-2 py-0.5">
                 <span className="size-1.5 rounded-full bg-brand-600" />
@@ -1255,29 +1271,59 @@ export default function CopilotPage() {
                 <p className="mt-3 text-xs font-semibold text-navy-800">Loading conversation…</p>
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center py-2 sm:py-4 text-center">
-                <div className="relative mb-2 sm:mb-2.5">
-                  <div className="absolute inset-0 rounded-2xl bg-brand-200/50 blur-xl" />
-                  <SafeImage
-                    src="/images/ai-assistant.png"
-                    alt=""
-                    className="relative size-12 sm:size-14 overflow-hidden rounded-2xl border border-brand-200 shadow-sm"
-                    imgClassName="size-full object-cover"
-                  />
+              <div className="flex h-full flex-col items-center py-3 sm:justify-center sm:py-4 text-center">
+                {/* AI avatar + greeting */}
+                <div className="flex flex-col items-center">
+                  <div className="relative mb-2">
+                    <div className="absolute inset-0 rounded-2xl bg-brand-200/50 blur-xl" />
+                    <SafeImage
+                      src="/images/ai-assistant.png"
+                      alt=""
+                      className="relative size-10 sm:size-14 overflow-hidden rounded-2xl border border-brand-200 shadow-sm"
+                      imgClassName="size-full object-cover"
+                    />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-extrabold tracking-tight text-navy-900">
+                    How can HealthSaathi help you today?
+                  </h3>
+                  {/* Subtitle hidden on mobile for headroom */}
+                  <p className="hidden sm:block mt-1 max-w-md text-[13px] leading-5 text-muted">
+                    Ask clinical questions about your lab tests, prescriptions, and biomarkers, or click any prompt below to begin.
+                  </p>
                 </div>
-                <h3 className="text-lg font-extrabold tracking-tight text-navy-900 sm:text-xl">
-                  How can HealthSaathi help you today?
-                </h3>
-                <p className="mt-1 max-w-md text-xs sm:text-[13px] leading-5 text-muted">
-                  Ask clinical questions about your lab tests, prescriptions, and biomarkers, or click any prompt below to begin.
-                </p>
 
-                {/* Mobile-only Centered Chat Input Box for ergonomic, user-friendly thumb access */}
-                <div className="mt-4 w-full max-w-md px-1 sm:hidden text-left">
+                {/* Mobile: Suggested prompts ABOVE the input field */}
+                <div className="mt-3 w-full max-w-md px-1 sm:hidden">
+                  <div className="grid gap-2">
+                    {prompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        disabled={thinking}
+                        onClick={() => {
+                          if (thinking) return
+                          setMessages((current) => [...current, createMessage('user', prompt)])
+                          handleAiQuery(prompt)
+                        }}
+                        className="group flex items-center gap-2.5 rounded-xl border border-ice-200 bg-white/90 p-2.5 text-left text-xs font-semibold leading-5 text-navy-850 shadow-xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:shadow-sm disabled:opacity-50 cursor-pointer"
+                      >
+                        <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-600 group-hover:text-white">
+                          <MessageCircle className="size-3.5" />
+                        </span>
+                        <span className="flex-1">{prompt}</span>
+                        <ArrowUpRight className="size-3.5 shrink-0 text-muted opacity-0 transition group-hover:opacity-100 group-hover:text-brand-600" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile-only Centered Chat Input Box — placed BELOW the prompts */}
+                <div className="mt-3 w-full max-w-md px-1 sm:hidden text-left">
                   {renderChatInputForm(true)}
                 </div>
 
-                <div className="mt-3.5 sm:mt-5 w-full max-w-xl">
+                {/* Desktop: prompts below the input (standard layout) */}
+                <div className="hidden sm:block mt-5 w-full max-w-xl">
                   <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wider text-muted">
                     Suggested prompts
                   </p>
@@ -1292,7 +1338,7 @@ export default function CopilotPage() {
                           setMessages((current) => [...current, createMessage('user', prompt)])
                           handleAiQuery(prompt)
                         }}
-                        className="group flex items-start gap-2.5 rounded-xl border border-ice-200 bg-white/90 p-2.5 sm:p-3 text-left text-xs font-semibold leading-5 text-navy-850 shadow-xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:shadow-sm disabled:opacity-50 cursor-pointer"
+                        className="group flex items-start gap-2.5 rounded-xl border border-ice-200 bg-white/90 p-3 text-left text-xs font-semibold leading-5 text-navy-850 shadow-xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:shadow-sm disabled:opacity-50 cursor-pointer"
                       >
                         <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-600 group-hover:text-white">
                           <MessageCircle className="size-3.5" />
