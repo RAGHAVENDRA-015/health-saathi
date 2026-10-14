@@ -24,6 +24,10 @@ export function createApp(): express.Application {
   const env = getEnv();
   const app = express();
 
+  // ─── Trust reverse proxy (Google Cloud Run / Load Balancer) ─────────────────
+  // Enables Express & express-rate-limit to correctly extract client IP from X-Forwarded-For
+  app.set('trust proxy', 1);
+
   // ─── Security headers ──────────────────────────────────────────────────────
   app.use(helmet());
 
