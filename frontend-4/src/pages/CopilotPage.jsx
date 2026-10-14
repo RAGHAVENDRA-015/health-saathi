@@ -19,10 +19,7 @@ import { cn } from '../utils/cn.js'
 
 const prompts = [
   'Explain my latest blood test in simple language.',
-  'What does Vitamin D mean in this sample report?',
   'Help me prepare questions for my doctor.',
-  'How can I compare two reports?',
-  'What information is available in my records?',
 ]
 
 function generateClinicalReply(question, documents = [], reports = [], medicines = [], appointments = [], selectedDocId = null, user = null, lang = 'en') {
@@ -423,6 +420,7 @@ export default function CopilotPage() {
   const [thinking, setThinking] = useState(false)
   const [isUploadingDoc, setIsUploadingDoc] = useState(false)
   const fileInputRef = useRef(null)
+  const fileInputMobileRef = useRef(null)
   const [messages, setMessages] = useState(() => questionFromLink
     ? [createMessage('user', questionFromLink)]
     : [])
@@ -876,10 +874,13 @@ export default function CopilotPage() {
 
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false)
   const attachMenuRef = useRef(null)
+  const attachMenuMobileRef = useRef(null)
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target)) {
+      const inDesktop = attachMenuRef.current && attachMenuRef.current.contains(event.target)
+      const inMobile = attachMenuMobileRef.current && attachMenuMobileRef.current.contains(event.target)
+      if (!inDesktop && !inMobile) {
         setIsAttachMenuOpen(false)
       }
     }
@@ -912,12 +913,277 @@ export default function CopilotPage() {
     )
   })
 
+  const renderChatInputForm = (isCentered = false) => (
+    <div className={cn('w-full', isCentered && 'max-w-xl mx-auto')}>
+      {selectedDocId && (
+        <div className="mb-2.5 sm:mb-3 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50/90 px-3 py-1.5 text-xs text-brand-800 shadow-2xs">
+          <span className="flex items-center gap-1.5 truncate">
+            <FileText className="size-3.5 shrink-0 text-brand-600" />
+            Attached Record:{' '}
+            <strong className="truncate font-semibold">
+              {documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title ||
+                documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name ||
+                'Selected Document'}
+            </strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedDocId(null)}
+            className="ml-2 font-bold text-brand-600 hover:text-brand-900 cursor-pointer"
+            aria-label="Remove attached record"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Speech-to-Text (STT) Recording & Transcribing Status Banner */}
+      {recordingState === 'recording' && (
+        <div className="mb-2.5 flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50/90 px-3 py-2 text-xs text-rose-800 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="relative flex size-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-rose-600" />
+            </span>
+            <span className="font-semibold">{t('copilot.mic_recording', 'Recording audio...')}</span>
+            <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[11px] font-mono font-bold text-rose-700">
+              {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={stopRecording}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
+          >
+            <Square className="size-3 fill-current" />
+            <span>{t('copilot.mic_stop', 'Stop & Transcribe')}</span>
+          </button>
+        </div>
+      )}
+      {recordingState === 'transcribing' && (
+        <div className="mb-2.5 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50/90 px-3 py-2 text-xs text-brand-800 animate-in fade-in duration-200">
+          <Loader2 className="size-3.5 animate-spin text-brand-600" />
+          <span className="font-medium">{t('copilot.mic_transcribing', 'Transcribing speech with Groq Whisper...')}</span>
+        </div>
+      )}
+
+      <form
+        onSubmit={submit}
+        className={cn(
+          'relative flex items-center gap-1.5 sm:gap-2 rounded-2xl bg-white p-1.5 sm:p-2 transition focus-within:ring-2 focus-within:ring-brand-200',
+          isCentered
+            ? 'border-2 border-brand-300 shadow-md focus-within:border-brand-500'
+            : 'border border-ice-200 shadow-xs focus-within:border-brand-300'
+        )}
+      >
+        {/* Attach Records Menu Popover */}
+        <div ref={isCentered ? attachMenuMobileRef : attachMenuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setIsAttachMenuOpen((open) => !open)}
+            aria-label="Attach medical record"
+            title="Attach medical record"
+            className={cn(
+              'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
+              selectedDocId
+                ? 'border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100'
+                : 'border-transparent text-navy-700 hover:bg-ice-100'
+            )}
+          >
+            <Plus className={cn('size-4.5 sm:size-5 transition-transform duration-200', isAttachMenuOpen && 'rotate-45')} />
+          </button>
+
+          {isAttachMenuOpen && (
+            <div
+              role="menu"
+              className={cn(
+                'absolute left-0 w-[calc(100vw-2rem)] max-w-sm sm:w-96 rounded-2xl border border-ice-200 bg-white p-3 shadow-pop z-30',
+                isCentered ? 'top-full mt-2' : 'bottom-full mb-3'
+              )}
+            >
+              <div className="flex items-center justify-between border-b border-ice-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 text-brand-600" />
+                  <span className="text-xs font-extrabold text-navy-900">Attach Medical Record</span>
+                </div>
+                {selectedDocId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDocId(null)
+                      setIsAttachMenuOpen(false)
+                    }}
+                    className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
+                  >
+                    Detach
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 text-[11px] leading-4 text-muted">
+                Select a record to scope clinical AI questions, or upload a new file:
+              </p>
+
+              {/* Direct Upload Input & Button */}
+              <div className="mt-2.5">
+                <input
+                  ref={isCentered ? fileInputMobileRef : fileInputRef}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp"
+                  className="hidden"
+                  onChange={handleDirectFileUpload}
+                />
+                <button
+                  type="button"
+                  disabled={isUploadingDoc}
+                  onClick={() => (isCentered ? fileInputMobileRef : fileInputRef).current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-brand-50/70 p-2.5 text-xs font-bold text-brand-700 transition hover:bg-brand-100 hover:border-brand-400 cursor-pointer disabled:opacity-60 shadow-2xs"
+                >
+                  {isUploadingDoc ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin text-brand-600" />
+                      <span>Uploading & Analyzing File…</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileUp className="size-4 text-brand-600" />
+                      <span>Upload document from device</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
+                {documents.length === 0 ? (
+                  <p className="py-4 text-center text-xs text-muted">No documents available yet. Upload one above!</p>
+                ) : (
+                  documents.map((document) => {
+                    const docId = document.id || document._id
+                    const isSelected = selectedDocId === docId || selectedDocId === document.id || selectedDocId === document._id
+                    const docName = document.title || document.name || document.fileName || 'Document'
+                    return (
+                      <button
+                        key={docId}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDocId(isSelected ? null : docId)
+                          setIsAttachMenuOpen(false)
+                        }}
+                        className={cn(
+                          'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition cursor-pointer border',
+                          isSelected
+                            ? 'border-brand-300 bg-brand-50/90 text-brand-900 shadow-xs'
+                            : 'border-transparent hover:bg-ice-50 text-navy-900'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'grid size-8 shrink-0 place-items-center rounded-lg',
+                            isSelected ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700'
+                          )}
+                        >
+                          <FileText className="size-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-bold">{docName}</span>
+                          <span className="block truncate text-[10px] text-muted">
+                            {document.type?.toUpperCase() || document.classification || 'DOCUMENT'} · {document.provider || 'Record'}
+                          </span>
+                        </span>
+                        {isSelected ? (
+                          <Badge tone="brand" className="text-[10px]">
+                            <Check className="size-3 mr-0.5" /> Attached
+                          </Badge>
+                        ) : (
+                          <Badge tone="ice" className="text-[10px]">
+                            Select
+                          </Badge>
+                        )}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <label htmlFor={isCentered ? 'copilot-message-centered' : 'copilot-message'} className="sr-only">
+          Ask HealthSaathi a question
+        </label>
+        <textarea
+          id={isCentered ? 'copilot-message-centered' : 'copilot-message'}
+          rows={1}
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              submit(event)
+            }
+          }}
+          placeholder={
+            selectedDocId
+              ? `${t('copilot.attached_document', 'Referencing Document:')} ${documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title || documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name || 'attached record'}…`
+              : t('copilot.placeholder', 'Ask about your lab results, doctor notes, or medical terms…')
+          }
+          className="max-h-32 min-h-[40px] sm:min-h-[44px] flex-1 resize-none bg-transparent px-2 sm:px-3 py-2 sm:py-2.5 text-base sm:text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none"
+        />
+
+        {/* Voice Input Microphone Button */}
+        <button
+          type="button"
+          onClick={recordingState === 'recording' ? stopRecording : startRecording}
+          disabled={thinking || recordingState === 'transcribing'}
+          aria-label={
+            recordingState === 'recording'
+              ? t('copilot.mic_stop', 'Stop recording & transcribe')
+              : t('copilot.mic_start', 'Start voice input')
+          }
+          title={
+            recordingState === 'recording'
+              ? t('copilot.mic_stop', 'Stop recording & transcribe')
+              : t('copilot.mic_start', 'Start voice input')
+          }
+          className={cn(
+            'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
+            recordingState === 'recording'
+              ? 'border-rose-300 bg-rose-50 text-rose-600 animate-pulse'
+              : recordingState === 'transcribing'
+              ? 'border-brand-200 bg-brand-50 text-brand-600 cursor-not-allowed'
+              : 'border-transparent text-navy-700 hover:bg-ice-100'
+          )}
+        >
+          {recordingState === 'recording' ? (
+            <Square className="size-3.5 sm:size-4 fill-rose-600 text-rose-600" />
+          ) : recordingState === 'transcribing' ? (
+            <Loader2 className="size-4 animate-spin text-brand-600" />
+          ) : (
+            <Mic className="size-4 sm:size-4.5" />
+          )}
+        </button>
+
+        <button
+          type="submit"
+          disabled={!input.trim() || thinking || recordingState === 'recording'}
+          aria-label={t('copilot.send_btn', 'Send message')}
+          className={cn(
+            'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition',
+            input.trim() && !thinking && recordingState !== 'recording'
+              ? 'bg-navy-900 text-white hover:bg-navy-800 cursor-pointer'
+              : 'cursor-not-allowed bg-ice-100 text-muted'
+          )}
+        >
+          <Send className="size-3.5 sm:size-4" />
+        </button>
+      </form>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-3 sm:gap-5">
       <PageHeader
         eyebrow={t('copilot.eyebrow', 'Your personal health companion')}
         title={t('copilot.title', 'AI Health Copilot')}
-        description={t('copilot.description', 'Ask about your lab findings, doctor notes, and medical records.')}
         actions={
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
@@ -1006,6 +1272,11 @@ export default function CopilotPage() {
                   Ask clinical questions about your lab tests, prescriptions, and biomarkers, or click any prompt below to begin.
                 </p>
 
+                {/* Mobile-only Centered Chat Input Box for ergonomic, user-friendly thumb access */}
+                <div className="mt-4 w-full max-w-md px-1 sm:hidden text-left">
+                  {renderChatInputForm(true)}
+                </div>
+
                 <div className="mt-3.5 sm:mt-5 w-full max-w-xl">
                   <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wider text-muted">
                     Suggested prompts
@@ -1066,245 +1337,8 @@ export default function CopilotPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-ice-100 bg-white/60 p-3 sm:p-4">
-            {selectedDocId && (
-              <div className="mb-3 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50/90 px-3 py-1.5 text-xs text-brand-800">
-                <span className="flex items-center gap-1.5 truncate">
-                  <FileText className="size-3.5 shrink-0 text-brand-600" />
-                  Attached Record: <strong className="truncate font-semibold">{documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title || documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name || 'Selected Document'}</strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDocId(null)}
-                  className="ml-2 font-bold text-brand-600 hover:text-brand-900 cursor-pointer"
-                  aria-label="Remove attached record"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {/* Speech-to-Text (STT) Recording & Transcribing Status Banner */}
-            {recordingState === 'recording' && (
-              <div className="mb-2.5 flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50/90 px-3 py-2 text-xs text-rose-800 animate-in fade-in duration-200">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex size-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                    <span className="relative inline-flex size-2.5 rounded-full bg-rose-600" />
-                  </span>
-                  <span className="font-semibold">{t('copilot.mic_recording', 'Recording audio...')}</span>
-                  <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[11px] font-mono font-bold text-rose-700">
-                    {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
-                >
-                  <Square className="size-3 fill-current" />
-                  <span>{t('copilot.mic_stop', 'Stop & Transcribe')}</span>
-                </button>
-              </div>
-            )}
-            {recordingState === 'transcribing' && (
-              <div className="mb-2.5 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50/90 px-3 py-2 text-xs text-brand-800 animate-in fade-in duration-200">
-                <Loader2 className="size-3.5 animate-spin text-brand-600" />
-                <span className="font-medium">{t('copilot.mic_transcribing', 'Transcribing speech with Groq Whisper...')}</span>
-              </div>
-            )}
-
-            <form onSubmit={submit} className="relative flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-ice-200 bg-white p-1.5 sm:p-2 shadow-xs transition focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100">
-              {/* Attach Records Menu Popover */}
-              <div ref={attachMenuRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsAttachMenuOpen((open) => !open)}
-                  aria-label="Attach medical record"
-                  title="Attach medical record"
-                  className={cn(
-                    'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
-                    selectedDocId
-                      ? 'border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100'
-                      : 'border-transparent text-navy-700 hover:bg-ice-100'
-                  )}
-                >
-                  <Plus className={cn('size-4.5 sm:size-5 transition-transform duration-200', isAttachMenuOpen && 'rotate-45')} />
-                </button>
-
-                {isAttachMenuOpen && (
-                  <div
-                    role="menu"
-                    className="absolute bottom-full left-0 mb-3 w-[calc(100vw-1.5rem)] max-w-sm sm:w-96 rounded-2xl border border-ice-200 bg-white p-3 shadow-pop z-30"
-                  >
-                    <div className="flex items-center justify-between border-b border-ice-100 pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <FileText className="size-4 text-brand-600" />
-                        <span className="text-xs font-extrabold text-navy-900">Attach Medical Record</span>
-                      </div>
-                      {selectedDocId && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedDocId(null)
-                            setIsAttachMenuOpen(false)
-                          }}
-                          className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
-                        >
-                          Detach
-                        </button>
-                      )}
-                    </div>
-                    <p className="mt-2 text-[11px] leading-4 text-muted">
-                      Select a record to scope clinical AI questions, or upload a new file:
-                    </p>
-
-                    {/* Direct Upload Input & Button */}
-                    <div className="mt-2.5">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf,.png,.jpg,.jpeg,.webp"
-                        className="hidden"
-                        onChange={handleDirectFileUpload}
-                      />
-                      <button
-                        type="button"
-                        disabled={isUploadingDoc}
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-brand-50/70 p-2.5 text-xs font-bold text-brand-700 transition hover:bg-brand-100 hover:border-brand-400 cursor-pointer disabled:opacity-60 shadow-2xs"
-                      >
-                        {isUploadingDoc ? (
-                          <>
-                            <Loader2 className="size-4 animate-spin text-brand-600" />
-                            <span>Uploading & Analyzing File…</span>
-                          </>
-                        ) : (
-                          <>
-                            <FileUp className="size-4 text-brand-600" />
-                            <span>Upload document from device</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
-                      {documents.length === 0 ? (
-                        <p className="py-4 text-center text-xs text-muted">No documents available yet. Upload one above!</p>
-                      ) : (
-                        documents.map((document) => {
-                          const docId = document.id || document._id
-                          const isSelected = selectedDocId === docId || selectedDocId === document.id || selectedDocId === document._id
-                          const docName = document.title || document.name || document.fileName || 'Document'
-                          return (
-                            <button
-                              key={docId}
-                              type="button"
-                              onClick={() => {
-                                setSelectedDocId(isSelected ? null : docId)
-                                setIsAttachMenuOpen(false)
-                              }}
-                              className={cn(
-                                'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition cursor-pointer border',
-                                isSelected
-                                  ? 'border-brand-300 bg-brand-50/90 text-brand-900 shadow-xs'
-                                  : 'border-transparent hover:bg-ice-50 text-navy-900'
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                   'grid size-8 shrink-0 place-items-center rounded-lg',
-                                   isSelected ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700'
-                                 )}
-                               >
-                                 <FileText className="size-4" />
-                               </span>
-                               <span className="min-w-0 flex-1">
-                                 <span className="block truncate text-xs font-bold">{docName}</span>
-                                 <span className="block truncate text-[10px] text-muted">
-                                   {document.type?.toUpperCase() || document.classification || 'DOCUMENT'} · {document.provider || 'Record'}
-                                 </span>
-                               </span>
-                               {isSelected ? (
-                                 <Badge tone="brand" className="text-[10px]">
-                                   <Check className="size-3 mr-0.5" /> Attached
-                                 </Badge>
-                               ) : (
-                                 <Badge tone="ice" className="text-[10px]">
-                                   Select
-                                 </Badge>
-                               )}
-                             </button>
-                           )
-                         })
-                       )}
-                     </div>
-                   </div>
-                 )}
-               </div>
-
-               <label htmlFor="copilot-message" className="sr-only">Ask HealthSaathi a question</label>
-               <textarea
-                 id="copilot-message"
-                 rows={1}
-                 value={input}
-                 onChange={(event) => setInput(event.target.value)}
-                 onKeyDown={(event) => {
-                   if (event.key === 'Enter' && !event.shiftKey) {
-                     event.preventDefault()
-                     submit(event)
-                   }
-                 }}
-                 placeholder={
-                   selectedDocId
-                     ? `${t('copilot.attached_document', 'Referencing Document:')} ${documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title || documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name || 'attached record'}…`
-                     : t('copilot.placeholder', 'Ask about your lab results, doctor notes, or medical terms…')
-                 }
-                className="max-h-32 min-h-[40px] sm:min-h-[44px] flex-1 resize-none bg-transparent px-2 sm:px-3 py-2 sm:py-2.5 text-base sm:text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none"
-              />
-
-              {/* Voice Input Microphone Button */}
-              <button
-                type="button"
-                onClick={recordingState === 'recording' ? stopRecording : startRecording}
-                disabled={thinking || recordingState === 'transcribing'}
-                aria-label={
-                  recordingState === 'recording'
-                    ? t('copilot.mic_stop', 'Stop recording & transcribe')
-                    : t('copilot.mic_start', 'Start voice input')
-                }
-                title={
-                  recordingState === 'recording'
-                    ? t('copilot.mic_stop', 'Stop recording & transcribe')
-                    : t('copilot.mic_start', 'Start voice input')
-                }
-                className={cn(
-                  'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
-                  recordingState === 'recording'
-                    ? 'border-rose-300 bg-rose-50 text-rose-600 animate-pulse'
-                    : recordingState === 'transcribing'
-                    ? 'border-brand-200 bg-brand-50 text-brand-600 cursor-not-allowed'
-                    : 'border-transparent text-navy-700 hover:bg-ice-100'
-                )}
-              >
-                {recordingState === 'recording' ? (
-                  <Square className="size-3.5 sm:size-4 fill-rose-600 text-rose-600" />
-                ) : recordingState === 'transcribing' ? (
-                  <Loader2 className="size-4 animate-spin text-brand-600" />
-                ) : (
-                  <Mic className="size-4 sm:size-4.5" />
-                )}
-              </button>
-
-              <button
-                type="submit"
-                disabled={!input.trim() || thinking || recordingState === 'recording'}
-                aria-label={t('copilot.send_btn', 'Send message')}
-                className={cn('grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition', input.trim() && !thinking && recordingState !== 'recording' ? 'bg-navy-900 text-white hover:bg-navy-800 cursor-pointer' : 'cursor-not-allowed bg-ice-100 text-muted')}
-              >
-                <Send className="size-3.5 sm:size-4" />
-              </button>
-            </form>
+          <div className={cn('border-t border-ice-100 bg-white/60 p-2.5 sm:p-4', messages.length === 0 && 'hidden sm:block')}>
+            {renderChatInputForm(false)}
           </div>
         </section>
 
