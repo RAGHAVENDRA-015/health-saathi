@@ -8,7 +8,7 @@ export async function connectMongo(): Promise<void> {
   const env = getEnv();
   client = new MongoClient(env.MONGODB_URI, {
     maxPoolSize: 20,
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
   });
 
