@@ -1126,7 +1126,8 @@ export default function CopilotPage() {
               ? `${t('copilot.attached_document', 'Referencing Document:')} ${documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title || documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name || 'attached record'}…`
               : t('copilot.placeholder', 'Ask about your lab results, doctor notes, or medical terms…')
           }
-          className="max-h-32 min-h-[40px] sm:min-h-[44px] flex-1 resize-none bg-transparent px-2 sm:px-3 py-2 sm:py-2.5 text-base sm:text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="max-h-32 min-h-[40px] sm:min-h-[44px] flex-1 resize-none overflow-y-auto bg-transparent px-2 sm:px-3 py-2 sm:py-2.5 text-base sm:text-sm leading-relaxed text-navy-900 placeholder:text-muted focus:outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         />
 
         {/* Voice Input Microphone Button */}
@@ -1214,7 +1215,7 @@ export default function CopilotPage() {
         />
       </div>
 
-      <section className="panel flex h-[calc(100dvh-4rem)] sm:h-[calc(100dvh-13.5rem)] sm:min-h-[480px] max-h-[860px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
+      <section className="panel flex h-[calc(100dvh-4.5rem)] sm:h-[calc(100dvh-13.5rem)] sm:min-h-[480px] max-h-[860px] w-full min-w-0 flex-col overflow-hidden" aria-label="Copilot conversation">
           <header className="flex items-center justify-between gap-2 border-b border-ice-100 bg-white/60 px-2.5 py-1.5 sm:px-6 sm:py-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <SafeImage src="/images/ai-assistant.png" alt="" className="size-7 sm:size-11 shrink-0 overflow-hidden rounded-lg sm:rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
@@ -1264,16 +1265,17 @@ export default function CopilotPage() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-5">
             {isLoadingConversation ? (
               <div className="flex h-full min-h-[340px] flex-col items-center justify-center py-4 text-center">
                 <div className="size-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
                 <p className="mt-3 text-xs font-semibold text-navy-800">Loading conversation…</p>
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex h-full flex-col items-center py-3 sm:justify-center sm:py-4 text-center">
-                {/* AI avatar + greeting */}
-                <div className="flex flex-col items-center">
+              <div className="flex h-full flex-col items-center sm:justify-center text-center">
+
+                {/* ── TOP: Avatar + greeting ── */}
+                <div className="flex flex-col items-center pt-3 sm:pt-0">
                   <div className="relative mb-2">
                     <div className="absolute inset-0 rounded-2xl bg-brand-200/50 blur-xl" />
                     <SafeImage
@@ -1292,9 +1294,13 @@ export default function CopilotPage() {
                   </p>
                 </div>
 
-                {/* Mobile: Suggested prompts ABOVE the input field */}
-                <div className="mt-3 w-full max-w-md px-1 sm:hidden">
-                  <div className="grid gap-2">
+                {/* ── SPACER: pushes bottom content down on mobile ── */}
+                <div className="flex-1 sm:hidden" />
+
+                {/* ── BOTTOM: Prompts + Input anchored near the bottom (mobile only) ── */}
+                <div className="w-full max-w-md px-1 pb-1 sm:hidden text-left flex flex-col">
+                  {/* Suggested prompts with comfortable responsive spacing */}
+                  <div className="grid gap-2 mb-3.5 sm:mb-4">
                     {prompts.map((prompt) => (
                       <button
                         key={prompt}
@@ -1305,7 +1311,7 @@ export default function CopilotPage() {
                           setMessages((current) => [...current, createMessage('user', prompt)])
                           handleAiQuery(prompt)
                         }}
-                        className="group flex items-center gap-2.5 rounded-xl border border-ice-200 bg-white/90 p-2.5 text-left text-xs font-semibold leading-5 text-navy-850 shadow-xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:shadow-sm disabled:opacity-50 cursor-pointer"
+                        className="group flex items-center gap-2.5 rounded-xl border border-ice-200 bg-white/95 p-3 text-left text-xs font-semibold leading-5 text-navy-850 shadow-xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:shadow-sm disabled:opacity-50 cursor-pointer"
                       >
                         <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-600 group-hover:text-white">
                           <MessageCircle className="size-3.5" />
@@ -1315,14 +1321,14 @@ export default function CopilotPage() {
                       </button>
                     ))}
                   </div>
+
+                  {/* Chat input — anchored near bottom with generous room above */}
+                  <div className="w-full">
+                    {renderChatInputForm(true)}
+                  </div>
                 </div>
 
-                {/* Mobile-only Centered Chat Input Box — placed BELOW the prompts */}
-                <div className="mt-3 w-full max-w-md px-1 sm:hidden text-left">
-                  {renderChatInputForm(true)}
-                </div>
-
-                {/* Desktop: prompts below the input (standard layout) */}
+                {/* ── Desktop: prompts below the greeting (standard centred layout) ── */}
                 <div className="hidden sm:block mt-5 w-full max-w-xl">
                   <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wider text-muted">
                     Suggested prompts

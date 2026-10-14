@@ -19,6 +19,7 @@ build/
 .next/
 out/
 .vercel/
+.firebase/
 
 # Logs
 logs/
