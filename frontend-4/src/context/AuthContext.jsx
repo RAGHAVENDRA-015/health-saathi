@@ -17,8 +17,13 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => storageService.get(AUTH_TOKEN_KEY, null, (v) => typeof v === 'string'))
   const [refreshToken, setRefreshToken] = useState(() => storageService.get(REFRESH_TOKEN_KEY, null, (v) => typeof v === 'string'))
-  const [isDemoMode, setIsDemoMode] = useState(false)
-  const [user, setUser] = useState(() => storageService.get('profile', mockUser))
+  const [isDemoMode, setIsDemoMode] = useState(() => storageService.get(DEMO_MODE_KEY, false))
+  const [user, setUser] = useState(() => {
+    const cached = storageService.get('profile', null)
+    if (cached) return cached
+    const isDemo = storageService.get(DEMO_MODE_KEY, false)
+    return isDemo ? mockUser : null
+  })
   const [isLoading, setIsLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
 
@@ -80,7 +85,7 @@ export function AuthProvider({ children }) {
           storageService.remove(REFRESH_TOKEN_KEY)
           storageService.remove(SESSION_TIMESTAMP_KEY)
           storageService.remove('profile')
-          setUser(mockUser)
+          setUser(isDemoMode ? mockUser : null)
           setIsLoading(false)
         }
         return
@@ -124,7 +129,7 @@ export function AuthProvider({ children }) {
                 storageService.remove(REFRESH_TOKEN_KEY)
                 storageService.remove(SESSION_TIMESTAMP_KEY)
                 storageService.remove('profile')
-                setUser(mockUser)
+                setUser(isDemoMode ? mockUser : null)
                 setIsLoading(false)
               }
               return
@@ -148,8 +153,10 @@ export function AuthProvider({ children }) {
             }
             setUser(resolved)
             storageService.set('profile', resolved)
-            const lang = resolved.preferences?.language || resolved.preferences?.preferredLanguage || 'en'
-            setAppLanguage(lang)
+            const cachedLang = storageService.get('healthsaathi_preferred_language', null)
+            const serverLang = resolved.preferences?.language || resolved.preferences?.preferredLanguage
+            const effectiveLang = cachedLang || serverLang || 'en'
+            setAppLanguage(effectiveLang)
           }
         } catch (err) {
           console.warn('[AuthContext] Backend profile fetch warning, preserving active session:', err.message)
@@ -158,8 +165,10 @@ export function AuthProvider({ children }) {
             const cached = storageService.get('profile', null)
             if (cached) {
               setUser(cached)
-              const lang = cached.preferences?.language || cached.preferences?.preferredLanguage || 'en'
-              setAppLanguage(lang)
+              const cachedLang = storageService.get('healthsaathi_preferred_language', null)
+              const serverLang = cached.preferences?.language || cached.preferences?.preferredLanguage
+              const effectiveLang = cachedLang || serverLang || 'en'
+              setAppLanguage(effectiveLang)
             }
           }
         }
@@ -218,8 +227,10 @@ export function AuthProvider({ children }) {
       setIsDemoMode(false)
       storageService.set(DEMO_MODE_KEY, false)
 
-      const lang = mergedUser.preferences?.language || mergedUser.preferences?.preferredLanguage || 'en'
-      setAppLanguage(lang)
+      const cachedLang = storageService.get('healthsaathi_preferred_language', null)
+      const serverLang = mergedUser.preferences?.language || mergedUser.preferences?.preferredLanguage
+      const effectiveLang = cachedLang || serverLang || 'en'
+      setAppLanguage(effectiveLang)
 
       await authApi.logAuthEvent('login', { mode: 'firebase', email })
       return { success: true, user: mergedUser, mode: 'live' }
@@ -255,8 +266,10 @@ export function AuthProvider({ children }) {
       setIsDemoMode(false)
       storageService.set(DEMO_MODE_KEY, false)
 
-      const lang = mergedUser.preferences?.language || mergedUser.preferences?.preferredLanguage || 'en'
-      setAppLanguage(lang)
+      const cachedLang = storageService.get('healthsaathi_preferred_language', null)
+      const serverLang = mergedUser.preferences?.language || mergedUser.preferences?.preferredLanguage
+      const effectiveLang = cachedLang || serverLang || 'en'
+      setAppLanguage(effectiveLang)
 
       await authApi.logAuthEvent('register', { mode: 'firebase', email })
       return { success: true, user: mergedUser, mode: 'live' }
@@ -298,8 +311,10 @@ export function AuthProvider({ children }) {
       setIsDemoMode(false)
       storageService.set(DEMO_MODE_KEY, false)
 
-      const lang = mergedUser.preferences?.language || mergedUser.preferences?.preferredLanguage || 'en'
-      setAppLanguage(lang)
+      const cachedLang = storageService.get('healthsaathi_preferred_language', null)
+      const serverLang = mergedUser.preferences?.language || mergedUser.preferences?.preferredLanguage
+      const effectiveLang = cachedLang || serverLang || 'en'
+      setAppLanguage(effectiveLang)
 
       // Sync avatar and display name to backend profile
       if (avatar || fullName) {
@@ -356,7 +371,7 @@ export function AuthProvider({ children }) {
       storageService.remove(`reminders_${uid}`)
       storageService.remove(`healthsaathi_has_selected_language_${uid}`)
     }
-    setUser(mockUser)
+    setUser(isDemoMode ? mockUser : null)
     setAuthError(null)
   }, [isDemoMode, user])
 

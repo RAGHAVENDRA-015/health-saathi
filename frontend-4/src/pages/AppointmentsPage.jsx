@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { CalendarDays, CheckCircle2, Clock3, Edit3, Info, MapPin, Plus, Search, Stethoscope, Trash2, Video } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '../components/common/Badge.jsx'
 import { Button } from '../components/common/Button.jsx'
 import { ConfirmDialog } from '../components/common/ConfirmDialog.jsx'
@@ -15,7 +16,8 @@ const today = () => new Date().toISOString().slice(0, 10)
 const blankAppointment = { doctorName: '', specialty: 'General Physician', date: today(), time: '10:00', location: '', visitType: 'In person', status: 'scheduled', notes: '' }
 
 export default function AppointmentsPage() {
-  useDocumentTitle('Appointments')
+  const { t } = useTranslation()
+  useDocumentTitle(t('appointments.title', 'Appointments'))
   const { appointments, addAppointment, updateAppointment, removeAppointment } = useHealthData()
   const { notify } = useToast()
   const [tab, setTab] = useState('upcoming')
@@ -55,17 +57,37 @@ export default function AppointmentsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow="Plan your next visit" title="Appointments" description="Organize upcoming doctor visits, specialist consultations, and notes in one place." actions={<Button onClick={openAdd}><Plus /> Schedule appointment</Button>} />
+      <PageHeader
+        eyebrow={t('appointments.eyebrow', 'Plan your next visit')}
+        title={t('appointments.title', 'Appointments')}
+        description={t('appointments.description', 'Organize upcoming doctor visits, specialist consultations, and notes in one place.')}
+        actions={<Button onClick={openAdd}><Plus /> {t('appointments.book_appointment', 'Schedule appointment')}</Button>}
+      />
       <div className="grid gap-3 sm:grid-cols-3">
-        <AppointmentSummary label="Upcoming" value={appointments.filter((item) => item.status === 'scheduled' && item.date >= today()).length} icon={CalendarDays} />
-        <AppointmentSummary label="Completed" value={appointments.filter((item) => item.status === 'completed').length} icon={CheckCircle2} />
-        <AppointmentSummary label="Visit format" value="In person / online" icon={Video} />
+        <AppointmentSummary label={t('appointments.upcoming_tab', 'Upcoming')} value={appointments.filter((item) => item.status === 'scheduled' && item.date >= today()).length} icon={CalendarDays} />
+        <AppointmentSummary label={t('appointments.past_tab', 'Completed')} value={appointments.filter((item) => item.status === 'completed').length} icon={CheckCircle2} />
+        <AppointmentSummary label={t('common.type', 'Visit format')} value="In person / online" icon={Video} />
       </div>
 
       <section className="panel p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Appointment views">
-            {[['upcoming', 'Upcoming'], ['past', 'Past'], ['all', 'All']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === id ? 'bg-navy-900 text-white' : 'bg-ice-50 text-muted hover:bg-ice-100'}`}>{label}</button>)}
+            {[
+              ['upcoming', t('appointments.upcoming_tab', 'Upcoming')],
+              ['past', t('appointments.past_tab', 'Past Visits')],
+              ['all', t('common.all', 'All')],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === id ? 'bg-navy-900 text-white' : 'bg-ice-50 text-muted hover:bg-ice-100'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           <label className="relative block w-full sm:max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" /><span className="sr-only">Search appointments</span><input className="field pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search doctor or clinic..." /></label>
         </div>
@@ -80,7 +102,7 @@ export default function AppointmentsPage() {
             {item.notes && <p className="mt-3 rounded-xl border border-ice-100 p-3 text-sm text-muted"><span className="font-semibold text-navy-900">Notes:</span> {item.notes}</p>}
             <div className="mt-4 flex flex-wrap justify-between gap-2"><button type="button" onClick={() => { updateAppointment(item.id, { status: isCompleted ? 'scheduled' : 'completed' }); notify({ title: isCompleted ? 'Appointment reopened' : 'Marked completed', description: 'The appointment status has been updated.' }) }} className="text-xs font-bold text-brand-700 hover:underline">{isCompleted ? 'Reopen appointment' : 'Mark completed'}</button>{!isCancelled && !isCompleted && <button type="button" onClick={() => setCancelTarget(item)} className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="size-3.5" /> Cancel visit</button>}</div>
           </article>
-        })}</div> : <EmptyState icon={CalendarDays} title="No appointments here" description={search ? 'Try another search or clear it.' : 'Schedule an appointment to start organizing upcoming visits.'} action={!search ? <Button onClick={openAdd}><Plus /> Add appointment</Button> : null} />}
+        })}</div> : <EmptyState icon={CalendarDays} title={t('appointments.no_appointments', 'No appointments here')} description={search ? 'Try another search or clear it.' : 'Schedule an appointment to start organizing upcoming visits.'} action={!search ? <Button onClick={openAdd}><Plus /> {t('appointments.book_appointment', 'Add appointment')}</Button> : null} />}
         
         <div className="mt-5 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-xs text-navy-800">
           <Info className="mt-0.5 size-4 shrink-0 text-brand-600" />

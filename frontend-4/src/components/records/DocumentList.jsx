@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Eye, EllipsisVertical, Sparkles, Trash2 } from 'lucide-react'
 import { useHealthData } from '../../context/HealthDataContext.jsx'
 import { useToast } from '../../context/ToastContext.jsx'
@@ -11,6 +12,7 @@ import { DocumentIcon } from '../common/DocumentIcon.jsx'
 import { Dropdown, DropdownItem } from '../common/Dropdown.jsx'
 
 export function DocumentList({ documents, caption, compact = false }) {
+  const { t } = useTranslation()
   const { removeDocument } = useHealthData()
   const { notify } = useToast()
   const [pendingDelete, setPendingDelete] = useState(null)
@@ -23,20 +25,20 @@ export function DocumentList({ documents, caption, compact = false }) {
           <thead>
             <tr className="text-xs font-semibold text-muted">
               <th scope="col" className={cn("rounded-l-xl bg-ice-50 font-semibold", compact ? "px-3 py-2.5" : "px-4 py-3")}>
-                Document Name
+                {t('records.col_name', 'Document Name')}
               </th>
               <th scope="col" className={cn("bg-ice-50 font-semibold", compact ? "px-3 py-2.5" : "px-4 py-3")}>
-                Date
+                {t('records.col_date', 'Date')}
               </th>
               <th scope="col" className={cn("bg-ice-50 font-semibold", compact ? "px-3 py-2.5" : "px-4 py-3")}>
-                Type
+                {t('records.col_type', 'Type')}
               </th>
               <th scope="col" className={cn("bg-ice-50 font-semibold", compact ? "px-3 py-2.5" : "px-4 py-3")}>
-                Status
+                {t('records.col_status', 'Status')}
               </th>
               <th scope="col" className={cn("rounded-r-xl bg-ice-50 font-semibold text-right", compact ? "px-3 py-2.5" : "px-4 py-3")}>
                 <span className="sr-only">Actions</span>
-                <span aria-hidden="true">Action</span>
+                <span aria-hidden="true">{t('records.col_action', 'Action')}</span>
               </th>
             </tr>
           </thead>
@@ -103,9 +105,9 @@ export function DocumentList({ documents, caption, compact = false }) {
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}
-        title="Remove this record?"
+        title={t('records.confirm_remove', 'Remove this record?')}
         description={pendingDelete ? `“${pendingDelete.title}” will be removed from your records on this device.` : ''}
-        confirmLabel="Remove record"
+        confirmLabel={t('records.remove_record', 'Remove record')}
         onConfirm={() => {
           removeDocument(pendingDelete.id)
           notify({ title: 'Record removed', description: pendingDelete.title, tone: 'info' })
@@ -116,6 +118,8 @@ export function DocumentList({ documents, caption, compact = false }) {
 }
 
 function RowActions({ document, onRequestDelete, compact = false }) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
       <Link
@@ -125,7 +129,7 @@ function RowActions({ document, onRequestDelete, compact = false }) {
           compact ? "h-8 px-3 text-xs" : "h-9 px-4 text-sm"
         )}
       >
-        View
+        {t('common.view', 'View')}
         <span className="sr-only"> {document.title}</span>
       </Link>
       <Dropdown
@@ -147,7 +151,7 @@ function RowActions({ document, onRequestDelete, compact = false }) {
         {({ close }) => (
           <div className="flex flex-col gap-0.5">
             <DropdownItem as={Link} to={`/records/${document.id}`} icon={Eye} onClick={close}>
-              View details
+              {t('common.view_details', 'View details')}
             </DropdownItem>
             <DropdownItem
               as={Link}
@@ -155,7 +159,7 @@ function RowActions({ document, onRequestDelete, compact = false }) {
               icon={Sparkles}
               onClick={close}
             >
-              Ask AI Copilot
+              {t('records.ask_copilot', 'Ask AI Copilot')}
             </DropdownItem>
             <DropdownItem
               icon={Trash2}
@@ -165,7 +169,7 @@ function RowActions({ document, onRequestDelete, compact = false }) {
                 onRequestDelete(document)
               }}
             >
-              Remove record
+              {t('records.remove_record', 'Remove record')}
             </DropdownItem>
           </div>
         )}

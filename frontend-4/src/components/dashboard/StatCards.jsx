@@ -1,28 +1,31 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ClipboardList, FileText, FlaskConical, ImageIcon, Minus, TrendingUp } from 'lucide-react'
 import { useHealthData } from '../../context/HealthDataContext.jsx'
 import { cn } from '../../utils/cn.js'
 
 const statConfig = [
-  { key: 'total', label: 'Total Records', icon: FileText, tile: 'bg-brand-100 text-brand-600', to: '/records' },
-  { key: 'lab', label: 'Lab Reports', icon: FlaskConical, tile: 'bg-brand-100 text-brand-600', to: '/records?category=lab' },
+  { key: 'total', labelKey: 'records.total_records', defaultLabel: 'Total Records', icon: FileText, tile: 'bg-brand-100 text-brand-600', to: '/records' },
+  { key: 'lab', labelKey: 'records.lab_reports', defaultLabel: 'Lab Reports', icon: FlaskConical, tile: 'bg-brand-100 text-brand-600', to: '/records?category=lab' },
   {
     key: 'prescription',
-    label: 'Prescriptions',
+    labelKey: 'records.prescriptions',
+    defaultLabel: 'Prescriptions',
     icon: ClipboardList,
     tile: 'bg-amber-50 text-amber-500',
     to: '/records?category=prescription',
   },
-  { key: 'scan', label: 'Scans & Others', icon: ImageIcon, tile: 'bg-violet-50 text-violet-500', to: '/records?category=scan' },
+  { key: 'scan', labelKey: 'records.scans_others', defaultLabel: 'Scans & Others', icon: ImageIcon, tile: 'bg-violet-50 text-violet-500', to: '/records?category=scan' },
 ]
 
 export function StatCards() {
+  const { t } = useTranslation()
   const { stats } = useHealthData()
 
   return (
     <section aria-label="Record summary">
       <ul className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 lg:grid-cols-4">
-        {statConfig.map(({ key, label, icon: Icon, tile, to }) => {
+        {statConfig.map(({ key, labelKey, defaultLabel, icon: Icon, tile, to }) => {
           const { count, addedThisPeriod } = stats[key]
           return (
             <li key={key}>
@@ -38,17 +41,17 @@ export function StatCards() {
                   <Icon className="size-6" aria-hidden="true" />
                 </span>
                 <span className="relative min-w-0">
-                  <span className="block text-sm font-medium text-muted">{label}</span>
+                  <span className="block text-sm font-medium text-muted">{t(labelKey, defaultLabel)}</span>
                   <span className="mt-0.5 flex flex-wrap items-baseline gap-x-3">
                     <span className="text-3xl font-extrabold tabular-nums text-navy-900">{count}</span>
                     {addedThisPeriod > 0 ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                        <TrendingUp className="size-3.5" aria-hidden="true" />+{addedThisPeriod} this month
+                        <TrendingUp className="size-3.5" aria-hidden="true" />+{addedThisPeriod} {t('dashboard.this_month', 'this month')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-muted">
                         <Minus className="size-3.5" aria-hidden="true" />
-                        No change
+                        {t('dashboard.no_change', 'No change')}
                       </span>
                     )}
                   </span>

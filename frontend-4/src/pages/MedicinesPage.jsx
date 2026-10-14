@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { BellRing, CalendarClock, Check, Clock3, Edit3, Info, Pill, Plus, Search, Trash2 } from 'lucide-react'
 import { Badge } from '../components/common/Badge.jsx'
 import { Button } from '../components/common/Button.jsx'
@@ -16,7 +17,8 @@ const blankMedicine = { name: '', strength: '', frequency: 'Once daily', timing:
 const tabs = [{ id: 'current', label: 'Current' }, { id: 'past', label: 'Past' }, { id: 'all', label: 'All medicines' }]
 
 export default function MedicinesPage() {
-  useDocumentTitle('Medicines')
+  const { t } = useTranslation()
+  useDocumentTitle(t('medicines.title', 'Medicines'))
   const { medicines, addMedicine, updateMedicine, removeMedicine } = useHealthData()
   const { notify } = useToast()
   const [tab, setTab] = useState('current')
@@ -54,17 +56,36 @@ export default function MedicinesPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow="Medicine organizer" title="My Medicines" description="Keep your medicine information and schedules organized in one place." actions={<Button onClick={openAdd}><Plus aria-hidden="true" /> Add medicine</Button>} />
+      <PageHeader
+        eyebrow={t('medicines.eyebrow', 'Medicine organizer')}
+        title={t('medicines.title', 'My Medicines')}
+        description={t('medicines.description', 'Keep your medicine information and schedules organized in one place.')}
+        actions={<Button onClick={openAdd}><Plus aria-hidden="true" /> {t('medicines.add_medicine', 'Add medicine')}</Button>}
+      />
       <div className="grid gap-3 sm:grid-cols-3">
-        <SummaryCard label="Current medicines" value={medicines.filter((item) => item.status === 'current').length} icon={Pill} />
-        <SummaryCard label="Past medicines" value={medicines.filter((item) => item.status === 'past').length} icon={Check} />
-        <SummaryCard label="Schedule tracking" value="Active" icon={BellRing} text="Dosage alerts enabled" />
+        <SummaryCard label={t('medicines.active_tab', 'Current medicines')} value={medicines.filter((item) => item.status === 'current').length} icon={Pill} />
+        <SummaryCard label={t('medicines.past_tab', 'Past medicines')} value={medicines.filter((item) => item.status === 'past').length} icon={Check} />
+        <SummaryCard label={t('common.status', 'Schedule tracking')} value={t('common.verified', 'Active')} icon={BellRing} text="Dosage alerts enabled" />
       </div>
 
       <section className="panel p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Medicine status">
-            {tabs.map((item) => <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === item.id ? 'bg-navy-900 text-white' : 'bg-ice-50 text-muted hover:bg-ice-100'}`}>{item.label}</button>)}
+            {tabs.map((item) => {
+              const tabLabel = item.id === 'current' ? t('medicines.active_tab', 'Current') : item.id === 'past' ? t('medicines.past_tab', 'Past') : t('common.all', 'All medicines')
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === item.id}
+                  onClick={() => setTab(item.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === item.id ? 'bg-navy-900 text-white' : 'bg-ice-50 text-muted hover:bg-ice-100'}`}
+                >
+                  {tabLabel}
+                </button>
+              )
+            })}
           </div>
           <label className="relative block w-full sm:max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" /><span className="sr-only">Search medicines</span><input className="field pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search medicines..." /></label>
         </div>
@@ -87,7 +108,7 @@ export default function MedicinesPage() {
               <Link to="/reminders" className="inline-flex items-center gap-1.5 rounded-full border border-ice-200 bg-white px-3 py-2 text-xs font-bold text-navy-900 hover:bg-ice-50"><BellRing className="size-3.5" /> Manage reminders</Link>
             </div>
           </article>)}
-        </div> : <EmptyState icon={Pill} title="No medicines found" description={search ? 'Try a different search term or clear your search.' : 'Add a medicine to begin organizing your schedule.'} action={!search ? <Button onClick={openAdd}><Plus /> Add medicine</Button> : null} />}
+        </div> : <EmptyState icon={Pill} title={t('medicines.no_medicines', 'No medicines found')} description={search ? 'Try a different search term or clear your search.' : 'Add a medicine to begin organizing your schedule.'} action={!search ? <Button onClick={openAdd}><Plus /> {t('medicines.add_medicine', 'Add medicine')}</Button> : null} />}
 
         <div className="mt-5 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-xs text-navy-800">
           <Info className="mt-0.5 size-4 shrink-0 text-brand-600" />

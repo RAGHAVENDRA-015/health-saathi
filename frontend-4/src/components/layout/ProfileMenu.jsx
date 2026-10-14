@@ -64,8 +64,8 @@ export function ProfileMenu() {
         {({ close }) => (
           <div>
             <div className="border-b border-ice-100 px-3 pt-2 pb-3">
-              <p className="text-sm font-bold text-navy-900">{user.displayName}</p>
-              <p className="truncate text-xs text-muted">{user.email}</p>
+              <p className="text-sm font-bold text-navy-900">{user?.displayName || user?.fullName || 'User'}</p>
+              <p className="truncate text-xs text-muted">{user?.email || ''}</p>
               <p className="mt-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold bg-brand-100 text-brand-700">
                 {t('topbar.verified_account')}
               </p>

@@ -17,7 +17,7 @@ import { copilotApi, stripMarkdown, sttApi } from '../services/api/index.js'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import { cn } from '../utils/cn.js'
 
-const prompts = [
+const DEFAULT_PROMPTS = [
   'Explain my latest blood test in simple language.',
   'Help me prepare questions for my doctor.',
 ]
@@ -408,6 +408,11 @@ function createMessage(role, content, sourceDocumentId = null) {
 export default function CopilotPage() {
   const { t, i18n } = useTranslation()
   useDocumentTitle(t('copilot.title', 'AI Health Copilot'))
+
+  const prompts = [
+    t('copilot.prompt_blood_test', 'Explain my latest blood test in simple language.'),
+    t('copilot.prompt_doctor_questions', 'Help me prepare questions for my doctor.'),
+  ]
   const [searchParams, setSearchParams] = useSearchParams()
   const questionFromLink = (searchParams.get('q') ?? '').trim()
   const docFromLink = (searchParams.get('doc') ?? '').trim()
@@ -919,18 +924,18 @@ export default function CopilotPage() {
         <div className="mb-2.5 sm:mb-3 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50/90 px-3 py-1.5 text-xs text-brand-800 shadow-2xs">
           <span className="flex items-center gap-1.5 truncate">
             <FileText className="size-3.5 shrink-0 text-brand-600" />
-            Attached Record:{' '}
+            {t('copilot.attached_record', 'Attached Record:')}{' '}
             <strong className="truncate font-semibold">
               {documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.title ||
                 documents.find((d) => d.id === selectedDocId || d._id === selectedDocId)?.name ||
-                'Selected Document'}
+                t('copilot.attached_record', 'Selected Document')}
             </strong>
           </span>
           <button
             type="button"
             onClick={() => setSelectedDocId(null)}
             className="ml-2 font-bold text-brand-600 hover:text-brand-900 cursor-pointer"
-            aria-label="Remove attached record"
+            aria-label={t('copilot.remove_attached', 'Remove attached record')}
           >
             ✕
           </button>
@@ -981,8 +986,8 @@ export default function CopilotPage() {
           <button
             type="button"
             onClick={() => setIsAttachMenuOpen((open) => !open)}
-            aria-label="Attach medical record"
-            title="Attach medical record"
+            aria-label={t('copilot.attach_record', 'Attach medical record')}
+            title={t('copilot.attach_record', 'Attach medical record')}
             className={cn(
               'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
               selectedDocId
@@ -1004,7 +1009,7 @@ export default function CopilotPage() {
               <div className="flex items-center justify-between border-b border-ice-100 pb-2.5">
                 <div className="flex items-center gap-2">
                   <FileText className="size-4 text-brand-600" />
-                  <span className="text-xs font-extrabold text-navy-900">Attach Medical Record</span>
+                  <span className="text-xs font-extrabold text-navy-900">{t('copilot.attach_record', 'Attach Medical Record')}</span>
                 </div>
                 {selectedDocId && (
                   <button
@@ -1015,12 +1020,12 @@ export default function CopilotPage() {
                     }}
                     className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
                   >
-                    Detach
+                    {t('copilot.detach', 'Detach')}
                   </button>
                 )}
               </div>
               <p className="mt-2 text-[11px] leading-4 text-muted">
-                Select a record to scope clinical AI questions, or upload a new file:
+                {t('copilot.attach_desc', 'Select a record to scope clinical AI questions, or upload a new file:')}
               </p>
 
               {/* Direct Upload Input & Button */}
@@ -1041,12 +1046,12 @@ export default function CopilotPage() {
                   {isUploadingDoc ? (
                     <>
                       <Loader2 className="size-4 animate-spin text-brand-600" />
-                      <span>Uploading & Analyzing File…</span>
+                      <span>{t('copilot.uploading_file', 'Uploading & Analyzing File…')}</span>
                     </>
                   ) : (
                     <>
                       <FileUp className="size-4 text-brand-600" />
-                      <span>Upload document from device</span>
+                      <span>{t('copilot.upload_device', 'Upload document from device')}</span>
                     </>
                   )}
                 </button>
@@ -1054,7 +1059,7 @@ export default function CopilotPage() {
 
               <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
                 {documents.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-muted">No documents available yet. Upload one above!</p>
+                  <p className="py-4 text-center text-xs text-muted">{t('copilot.no_docs', 'No documents available yet. Upload one above!')}</p>
                 ) : (
                   documents.map((document) => {
                     const docId = document.id || document._id
@@ -1091,11 +1096,11 @@ export default function CopilotPage() {
                         </span>
                         {isSelected ? (
                           <Badge tone="brand" className="text-[10px]">
-                            <Check className="size-3 mr-0.5" /> Attached
+                            <Check className="size-3 mr-0.5" /> {t('copilot.attached', 'Attached')}
                           </Badge>
                         ) : (
                           <Badge tone="ice" className="text-[10px]">
-                            Select
+                            {t('copilot.select', 'Select')}
                           </Badge>
                         )}
                       </button>
@@ -1221,7 +1226,7 @@ export default function CopilotPage() {
               <SafeImage src="/images/ai-assistant.png" alt="" className="size-7 sm:size-11 shrink-0 overflow-hidden rounded-lg sm:rounded-2xl shadow-xs" imgClassName="size-full object-cover" />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h2 className="text-xs sm:text-sm font-extrabold text-navy-900 truncate">Your HealthSaathi</h2>
+                  <h2 className="text-xs sm:text-sm font-extrabold text-navy-900 truncate">{t('copilot.your_healthsaathi', 'Your HealthSaathi')}</h2>
                   {/* Conversation title shown inline on desktop only — no gray chip on mobile */}
                   {activeConversation?.title && (
                     <span className="hidden sm:inline-block max-w-xs truncate rounded-md bg-ice-100 px-2 py-0.5 text-[11px] font-semibold text-navy-800">
@@ -1233,7 +1238,7 @@ export default function CopilotPage() {
                 <p className="hidden sm:block mt-0.5 text-xs text-muted truncate">
                   {selectedDocId
                     ? `Scoped: ${documents.find((d) => d.id === selectedDocId)?.title || 'Selected Record'}`
-                    : 'Clinical AI Assistant'}
+                    : t('copilot.eyebrow', 'Clinical AI Assistant')}
                 </p>
               </div>
             </div>
@@ -1242,25 +1247,25 @@ export default function CopilotPage() {
               <button
                 type="button"
                 onClick={openHistory}
-                aria-label="Chat history"
+                aria-label={t('copilot.history', 'History')}
                 className="inline-flex items-center gap-1 rounded-xl border border-ice-200 bg-white/80 px-2 py-1.5 sm:px-3 text-xs font-semibold text-navy-700 hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-700 transition cursor-pointer shadow-2xs"
               >
                 <History className="size-3.5 text-brand-600" />
-                <span className="hidden sm:inline">History ({conversations.length})</span>
+                <span className="hidden sm:inline">{t('copilot.history', 'History')} ({conversations.length})</span>
               </button>
               {/* New chat button on mobile */}
               <button
                 type="button"
                 onClick={startNewConversation}
-                aria-label="New chat"
+                aria-label={t('copilot.new_chat', 'New chat')}
                 className="sm:hidden inline-flex items-center gap-1 rounded-xl border border-ice-200 bg-white/80 px-2 py-1.5 text-xs font-semibold text-navy-700 hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-700 transition cursor-pointer shadow-2xs"
               >
                 <Plus className="size-3.5 text-brand-600" />
               </button>
               <Badge tone="brand" className="text-[10px] sm:text-xs px-2 py-0.5">
                 <span className="size-1.5 rounded-full bg-brand-600" />
-                <span className="hidden sm:inline">Live AI Copilot</span>
-                <span className="sm:hidden">Live AI</span>
+                <span className="hidden sm:inline">{t('copilot.live_ai', 'Live AI Copilot')}</span>
+                <span className="sm:hidden">{t('copilot.live_ai_short', 'Live AI')}</span>
               </Badge>
             </div>
           </header>
@@ -1269,7 +1274,7 @@ export default function CopilotPage() {
             {isLoadingConversation ? (
               <div className="flex h-full min-h-[340px] flex-col items-center justify-center py-4 text-center">
                 <div className="size-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-                <p className="mt-3 text-xs font-semibold text-navy-800">Loading conversation…</p>
+                <p className="mt-3 text-xs font-semibold text-navy-800">{t('copilot.loading', 'Loading conversation…')}</p>
               </div>
             ) : messages.length === 0 ? (
               <div className="flex h-full flex-col items-center sm:justify-center text-center">
@@ -1286,11 +1291,11 @@ export default function CopilotPage() {
                     />
                   </div>
                   <h3 className="text-base sm:text-xl font-extrabold tracking-tight text-navy-900">
-                    How can HealthSaathi help you today?
+                    {t('copilot.greeting', 'How can HealthSaathi help you today?')}
                   </h3>
                   {/* Subtitle hidden on mobile for headroom */}
                   <p className="hidden sm:block mt-1 max-w-md text-[13px] leading-5 text-muted">
-                    Ask clinical questions about your lab tests, prescriptions, and biomarkers, or click any prompt below to begin.
+                    {t('copilot.greeting_desc', 'Ask clinical questions about your lab tests, prescriptions, and biomarkers, or click any prompt below to begin.')}
                   </p>
                 </div>
 
@@ -1331,7 +1336,7 @@ export default function CopilotPage() {
                 {/* ── Desktop: prompts below the greeting (standard centred layout) ── */}
                 <div className="hidden sm:block mt-5 w-full max-w-xl">
                   <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wider text-muted">
-                    Suggested prompts
+                    {t('copilot.suggested_prompts', 'Suggested prompts')}
                   </p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {prompts.map((prompt) => (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft, CheckCircle2, Download, FileImage, FileQuestion, FileText, Info,
   Sparkles, Trash2,
@@ -19,11 +20,8 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import { cn } from '../utils/cn.js'
 import { formatDate } from '../utils/documents.js'
 
-const tabs = [
-  { id: 'summary', label: 'AI Summary' },
-]
-
 export default function DocumentAnalysisPage() {
+  const { t } = useTranslation()
   const { documentId } = useParams()
   const navigate = useNavigate()
   const { documents, reports, removeDocument, getLocalFile } = useHealthData()
@@ -69,11 +67,15 @@ export default function DocumentAnalysisPage() {
     ['Status', <StatusBadge key="status" status={document.status} />],
   ]
 
+  const tabs = [
+    { id: 'summary', label: t('dashboard.ai_analysis', 'AI Summary') },
+  ]
+
   return (
     <div className="flex flex-col gap-5">
       <Link to="/records" className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-brand-600 hover:underline">
         <ArrowLeft className="size-4" aria-hidden="true" />
-        My Records
+        {t('records.eyebrow', 'My Records')}
       </Link>
 
       <header className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -90,10 +92,10 @@ export default function DocumentAnalysisPage() {
         <div className="flex flex-wrap gap-2">
           {file && <Button variant="secondary" onClick={() => downloadFile(file)}><Download aria-hidden="true" /> Download original</Button>}
           <Button to={`/copilot?q=${encodeURIComponent(`Explain my ${document.title}`)}&doc=${encodeURIComponent(document.id || document._id)}`} variant="navy">
-            <Sparkles aria-hidden="true" /> Ask AI Copilot
+            <Sparkles aria-hidden="true" /> {t('records.ask_copilot', 'Ask AI Copilot')}
           </Button>
           <Button variant="secondary" onClick={() => setIsConfirmOpen(true)}>
-            <Trash2 aria-hidden="true" /> Remove
+            <Trash2 aria-hidden="true" /> {t('records.remove_record', 'Remove')}
           </Button>
         </div>
       </header>
@@ -102,7 +104,7 @@ export default function DocumentAnalysisPage() {
         <div className="flex flex-col gap-5">
           <LocalFilePreview file={file} title={document.title} fileName={document.fileName} />
           <section className="panel p-5 sm:p-6">
-            <h2 className="text-base font-extrabold text-navy-900">Document details</h2>
+            <h2 className="text-base font-extrabold text-navy-900">{t('records.document_details', 'Document details')}</h2>
             <dl className="mt-4 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
               {details.map(([label, value]) => (
                 <div key={label} className="min-w-0">

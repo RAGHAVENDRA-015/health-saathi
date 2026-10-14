@@ -45,13 +45,13 @@ export function searchHealthData(rawQuery, { documents, reports, medicines, page
       id: 'medicines',
       label: 'Medicines',
       items: medicines
-        .filter((medicine) => matches(medicine.name, medicine.purpose))
+        .filter((medicine) => matches(medicine.name, medicine.purpose, medicine.strength, medicine.notes))
         .slice(0, MAX_PER_GROUP)
         .map((medicine) => ({
-          id: `medicine-${medicine.id}`,
+          id: `medicine-${medicine.id || medicine._id}`,
           kind: 'medicine',
           label: medicine.name,
-          description: medicine.purpose,
+          description: medicine.strength || medicine.purpose || medicine.frequency || 'Prescribed medicine',
           to: '/medicines',
         })),
     },

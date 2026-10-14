@@ -43,33 +43,39 @@ export function NotificationsMenu() {
               Mark all read
             </button>
           </div>
-          <ul className="flex flex-col gap-0.5">
-            {notifications.map((item) => (
-              <li key={item.id}>
-                <Link
-                  to={item.to}
-                  onClick={() => {
-                    markNotificationRead(item.id)
-                    close()
-                  }}
-                  className="flex gap-3 rounded-xl px-3 py-2.5 hover:bg-ice-50"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn('mt-1.5 size-2 shrink-0 rounded-full', item.read ? 'bg-ice-300' : 'bg-accent-500')}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className={cn('block text-sm text-navy-900', item.read ? 'font-medium' : 'font-bold')}>
-                      {item.title}
-                      {!item.read && <span className="sr-only"> (unread)</span>}
+          {notifications.length > 0 ? (
+            <ul className="flex flex-col gap-0.5">
+              {notifications.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    to={item.to}
+                    onClick={() => {
+                      markNotificationRead(item.id)
+                      close()
+                    }}
+                    className="flex gap-3 rounded-xl px-3 py-2.5 hover:bg-ice-50"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn('mt-1.5 size-2 shrink-0 rounded-full', item.read ? 'bg-ice-300' : 'bg-accent-500')}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className={cn('block text-sm text-navy-900', item.read ? 'font-medium' : 'font-bold')}>
+                        {item.title}
+                        {!item.read && <span className="sr-only"> (unread)</span>}
+                      </span>
+                      <span className="block text-xs text-muted">{item.description}</span>
+                      <span className="mt-1 block text-[11px] text-muted/80">{item.time}</span>
                     </span>
-                    <span className="block text-xs text-muted">{item.description}</span>
-                    <span className="mt-1 block text-[11px] text-muted/80">{item.time}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="px-4 py-8 text-center text-xs text-muted">
+              No notifications yet
+            </div>
+          )}
         </div>
       )}
     </Dropdown>

@@ -23,8 +23,24 @@ export function HealthDataProvider({ children }) {
   const auth = useAuth()
   const { notify } = useToast()
   useNotificationForegroundListener(notify, auth?.isLiveAuth)
+
+  const currentUserId = auth?.isLiveAuth ? (auth?.user?.uid || auth?.user?.id || auth?.user?.email || null) : null
+
   const [localUser, setLocalUser] = usePersistentState('profile', mockUser, isValidUser)
-  const user = auth?.user ?? localUser
+  const user = useMemo(() => {
+    if (auth?.user) return auth.user
+    if (auth?.isLiveAuth) {
+      return {
+        id: currentUserId || 'user',
+        firstName: 'User',
+        displayName: 'User',
+        fullName: 'User',
+        email: '',
+      }
+    }
+    return localUser || mockUser
+  }, [auth?.user, auth?.isLiveAuth, currentUserId, localUser])
+
   const updateUser = useCallback(
     (patch) => {
       if (auth?.updateProfile) {
@@ -37,10 +53,82 @@ export function HealthDataProvider({ children }) {
 
   // Actual File objects are kept in memory only; never serialize file bytes to localStorage.
   const [localFiles, setLocalFiles] = useState({})
-  const [documents, setDocuments] = usePersistentState('documents', mockDocuments, isValidDocumentList)
 
-  // One-time migration for users who already have Phase 3 demo records in localStorage.
+  // Scoped documents state:
+  // If authenticated user: NEVER load mockDocuments! Load from documents_${currentUserId} or default to []
+  // If demo mode: load from documents_demo or mockDocuments
+  const [documents, setDocuments] = useState(() => {
+    if (auth?.isLiveAuth && currentUserId) {
+      return storageService.get(`documents_${currentUserId}`, [])
+    }
+    if (auth?.isDemoMode) {
+      return storageService.get('documents_demo', mockDocuments)
+    }
+    return []
+  })
+
+  const [medicines, setMedicines] = useState(() => {
+    if (auth?.isLiveAuth && currentUserId) {
+      return storageService.get(`medicines_${currentUserId}`, [])
+    }
+    if (auth?.isDemoMode) {
+      return storageService.get('medicines_demo', mockMedicinesData)
+    }
+    return []
+  })
+
+  const [appointments, setAppointments] = useState(() => {
+    if (auth?.isLiveAuth && currentUserId) {
+      return storageService.get(`appointments_${currentUserId}`, [])
+    }
+    if (auth?.isDemoMode) {
+      return storageService.get('appointments_demo', mockAppointmentsData)
+    }
+    return []
+  })
+
+  const [reminders, setReminders] = useState(() => {
+    if (auth?.isLiveAuth && currentUserId) {
+      return storageService.get(`reminders_${currentUserId}`, [])
+    }
+    if (auth?.isDemoMode) {
+      return storageService.get('reminders_demo', mockRemindersData)
+    }
+    return []
+  })
+
+  const [readNotificationIds, setReadNotificationIds] = useState(() => {
+    if (currentUserId) {
+      return storageService.get(`readNotifications_${currentUserId}`, [])
+    }
+    return []
+  })
+
+  const [recentSearches, setRecentSearches] = useState(() => {
+    if (currentUserId) {
+      return storageService.get(`recentSearches_${currentUserId}`, [])
+    }
+    return []
+  })
+
+  const [isLoadingBackend, setIsLoadingBackend] = useState(false)
+
+  // 1. Purge legacy un-scoped clinical data from localStorage to prevent cross-account leak
   useEffect(() => {
+    if (auth?.isLiveAuth) {
+      storageService.remove('documents')
+      storageService.remove('medicines')
+      storageService.remove('appointments')
+      storageService.remove('reminders')
+      storageService.remove('readNotifications')
+      storageService.remove('recentSearches')
+      storageService.remove('phase4DocumentMigration')
+    }
+  }, [auth?.isLiveAuth])
+
+  // 2. One-time migration strictly for demo mode users (never for live authenticated users)
+  useEffect(() => {
+    if (auth?.isLiveAuth || !auth?.isDemoMode) return
     const alreadyMigrated = storageService.get('phase4DocumentMigration', false, (value) => typeof value === 'boolean')
     if (alreadyMigrated) return
     const defaultsById = new Map(mockDocuments.map((doc) => [doc.id, doc]))
@@ -57,58 +145,57 @@ export function HealthDataProvider({ children }) {
       })
       const existingIds = new Set(migrated.map((doc) => doc.id))
       const newlySeededDocs = mockDocuments.filter((doc) => !existingIds.has(doc.id) && doc.id === 'doc-urinalysis')
-      return [...newlySeededDocs, ...migrated]
+      const merged = [...newlySeededDocs, ...migrated]
+      storageService.set('documents_demo', merged)
+      return merged
     })
     storageService.set('phase4DocumentMigration', true)
-  }, [setDocuments])
+  }, [auth?.isLiveAuth, auth?.isDemoMode])
 
-  const [medicines, setMedicines] = usePersistentState('medicines', mockMedicinesData, Array.isArray)
-  const [appointments, setAppointments] = usePersistentState('appointments', mockAppointmentsData, Array.isArray)
-  const [reminders, setReminders] = usePersistentState('reminders', mockRemindersData, Array.isArray)
-  const [readNotificationIds, setReadNotificationIds] = usePersistentState('readNotifications', [], isStringArray)
-  const [recentSearches, setRecentSearches] = usePersistentState('recentSearches', [], isStringArray)
-  const [isLoadingBackend, setIsLoadingBackend] = useState(false)
+  // 3. User switch isolation: wipe or restore scoped user data whenever active user identity changes or on mount
+  const prevUserIdRef = useRef(null)
 
-  const currentUserId = auth?.isLiveAuth ? (auth?.user?.uid || auth?.user?.id || auth?.user?.email || null) : null
-  const prevUserIdRef = useRef(currentUserId)
-
-  // 1. Purge legacy un-scoped clinical data from localStorage to prevent cross-account leak
-  useEffect(() => {
-    if (auth?.isLiveAuth) {
-      storageService.remove('documents')
-      storageService.remove('medicines')
-      storageService.remove('appointments')
-      storageService.remove('reminders')
-    }
-  }, [auth?.isLiveAuth])
-
-  // 2. Immediate user switch isolation: wipe or restore scoped user data whenever active user identity changes
   useEffect(() => {
     if (prevUserIdRef.current !== currentUserId) {
       prevUserIdRef.current = currentUserId
       if (currentUserId) {
-        // Scoped cache for this specific user
-        const userDocsKey = `documents_${currentUserId}`
-        const cachedDocs = storageService.get(userDocsKey, null)
-        setDocuments(cachedDocs || [])
-        setMedicines(storageService.get(`medicines_${currentUserId}`, []))
-        setAppointments(storageService.get(`appointments_${currentUserId}`, []))
-        setReminders(storageService.get(`reminders_${currentUserId}`, []))
+        // Scoped cache for this specific user - User A gets User A data, User B gets User B data
+        const cachedDocs = storageService.get(`documents_${currentUserId}`, [])
+        const cachedMeds = storageService.get(`medicines_${currentUserId}`, [])
+        const cachedAppts = storageService.get(`appointments_${currentUserId}`, [])
+        const cachedRems = storageService.get(`reminders_${currentUserId}`, [])
+        const cachedReads = storageService.get(`readNotifications_${currentUserId}`, [])
+        const cachedSearches = storageService.get(`recentSearches_${currentUserId}`, [])
+        setDocuments(cachedDocs)
+        setMedicines(cachedMeds)
+        setAppointments(cachedAppts)
+        setReminders(cachedRems)
+        setReadNotificationIds(cachedReads)
+        setRecentSearches(cachedSearches)
         setLocalFiles({})
       } else {
-        // Logged out / unauthenticated: return to demo baseline
-        setDocuments(mockDocuments)
-        setMedicines(mockMedicinesData)
-        setAppointments(mockAppointmentsData)
-        setReminders(mockRemindersData)
+        // Logged out / unauthenticated: return to demo baseline if in demo mode, else blank
+        if (auth?.isDemoMode) {
+          setDocuments(storageService.get('documents_demo', mockDocuments))
+          setMedicines(storageService.get('medicines_demo', mockMedicinesData))
+          setAppointments(storageService.get('appointments_demo', mockAppointmentsData))
+          setReminders(storageService.get('reminders_demo', mockRemindersData))
+        } else {
+          setDocuments([])
+          setMedicines([])
+          setAppointments([])
+          setReminders([])
+        }
+        setReadNotificationIds([])
+        setRecentSearches([])
         setLocalFiles({})
       }
     }
-  }, [currentUserId, setDocuments, setMedicines, setAppointments, setReminders])
+  }, [currentUserId, auth?.isDemoMode])
 
-  // 3. Synchronize live data when authenticated with backend
+  // 4. Synchronize live data when authenticated with backend
   useEffect(() => {
-    if (!auth?.isLiveAuth) return
+    if (!auth?.isLiveAuth || !currentUserId) return
 
     let isMounted = true
     async function loadBackendData() {
@@ -126,19 +213,19 @@ export function HealthDataProvider({ children }) {
         // Set live user documents directly (even if items is [] for a new user with 0 uploads)
         if (docsRes.status === 'fulfilled' && Array.isArray(docsRes.value?.items)) {
           setDocuments(docsRes.value.items)
-          if (currentUserId) storageService.set(`documents_${currentUserId}`, docsRes.value.items)
+          storageService.set(`documents_${currentUserId}`, docsRes.value.items)
         }
         if (medsRes.status === 'fulfilled' && Array.isArray(medsRes.value?.items)) {
           setMedicines(medsRes.value.items)
-          if (currentUserId) storageService.set(`medicines_${currentUserId}`, medsRes.value.items)
+          storageService.set(`medicines_${currentUserId}`, medsRes.value.items)
         }
         if (apptsRes.status === 'fulfilled' && Array.isArray(apptsRes.value?.items)) {
           setAppointments(apptsRes.value.items)
-          if (currentUserId) storageService.set(`appointments_${currentUserId}`, apptsRes.value.items)
+          storageService.set(`appointments_${currentUserId}`, apptsRes.value.items)
         }
         if (remsRes.status === 'fulfilled' && Array.isArray(remsRes.value?.items)) {
           setReminders(remsRes.value.items)
-          if (currentUserId) storageService.set(`reminders_${currentUserId}`, remsRes.value.items)
+          storageService.set(`reminders_${currentUserId}`, remsRes.value.items)
         }
       } catch (err) {
         console.warn('[HealthDataContext] Live backend synchronization warning:', err)
@@ -151,15 +238,24 @@ export function HealthDataProvider({ children }) {
     return () => {
       isMounted = false
     }
-  }, [auth?.isLiveAuth, currentUserId, setDocuments, setMedicines, setAppointments, setReminders])
+  }, [auth?.isLiveAuth, currentUserId])
 
   const sortedDocuments = useMemo(() => sortByDateDesc(documents), [documents])
   const stats = useMemo(() => getDocumentStats(documents), [documents])
 
-  const notifications = useMemo(
-    () => mockNotifications.map((item) => ({ ...item, read: readNotificationIds.includes(item.id) })),
-    [readNotificationIds],
-  )
+  const reports = useMemo(() => {
+    if (auth?.isLiveAuth) {
+      return []
+    }
+    return mockReports
+  }, [auth?.isLiveAuth])
+
+  const notifications = useMemo(() => {
+    if (auth?.isLiveAuth) {
+      return []
+    }
+    return mockNotifications.map((item) => ({ ...item, read: readNotificationIds.includes(item.id) }))
+  }, [auth?.isLiveAuth, readNotificationIds])
 
   const registerLocalFile = useCallback((documentId, file) => {
     if (!documentId || typeof File === 'undefined' || !(file instanceof File)) return
@@ -191,12 +287,16 @@ export function HealthDataProvider({ children }) {
       }
       setDocuments((current) => {
         const next = [document, ...current]
-        if (currentUserId) storageService.set(`documents_${currentUserId}`, next)
+        if (currentUserId) {
+          storageService.set(`documents_${currentUserId}`, next)
+        } else if (auth?.isDemoMode) {
+          storageService.set('documents_demo', next)
+        }
         return next
       })
       return document
     },
-    [auth?.isLiveAuth, currentUserId, setDocuments],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const removeDocument = useCallback(
@@ -209,8 +309,12 @@ export function HealthDataProvider({ children }) {
         }
       }
       setDocuments((current) => {
-        const next = current.filter((doc) => doc.id !== id)
-        if (currentUserId) storageService.set(`documents_${currentUserId}`, next)
+        const next = current.filter((doc) => doc.id !== id && doc._id !== id)
+        if (currentUserId) {
+          storageService.set(`documents_${currentUserId}`, next)
+        } else if (auth?.isDemoMode) {
+          storageService.set('documents_demo', next)
+        }
         return next
       })
       setLocalFiles((current) => {
@@ -220,25 +324,29 @@ export function HealthDataProvider({ children }) {
         return next
       })
     },
-    [auth?.isLiveAuth, currentUserId, setDocuments],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const addMedicine = useCallback(
     async (input) => {
+      let created = null
       if (auth?.isLiveAuth) {
         try {
-          const created = await medicinesApi.createMedicine(input)
-          setMedicines((current) => [created, ...current])
-          return created
+          created = await medicinesApi.createMedicine(input)
         } catch (err) {
           console.warn('[HealthDataContext] Live create medicine error:', err)
         }
       }
-      const item = { id: `med-${Date.now().toString(36)}`, status: 'current', ...input }
-      setMedicines((current) => [item, ...current])
+      const item = created || { id: `med-${Date.now().toString(36)}`, status: 'current', ...input }
+      setMedicines((current) => {
+        const next = [item, ...current]
+        if (currentUserId) storageService.set(`medicines_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('medicines_demo', next)
+        return next
+      })
       return item
     },
-    [auth?.isLiveAuth, setMedicines],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const updateMedicine = useCallback(
@@ -250,9 +358,14 @@ export function HealthDataProvider({ children }) {
           console.warn('[HealthDataContext] Live update medicine error:', err)
         }
       }
-      setMedicines((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+      setMedicines((current) => {
+        const next = current.map((item) => (item.id === id || item._id === id ? { ...item, ...patch } : item))
+        if (currentUserId) storageService.set(`medicines_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('medicines_demo', next)
+        return next
+      })
     },
-    [auth?.isLiveAuth, setMedicines],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const removeMedicine = useCallback(
@@ -264,27 +377,36 @@ export function HealthDataProvider({ children }) {
           console.warn('[HealthDataContext] Live delete medicine error:', err)
         }
       }
-      setMedicines((current) => current.filter((item) => item.id !== id))
+      setMedicines((current) => {
+        const next = current.filter((item) => item.id !== id && item._id !== id)
+        if (currentUserId) storageService.set(`medicines_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('medicines_demo', next)
+        return next
+      })
     },
-    [auth?.isLiveAuth, setMedicines],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const addAppointment = useCallback(
     async (input) => {
+      let created = null
       if (auth?.isLiveAuth) {
         try {
-          const created = await appointmentsApi.createAppointment(input)
-          setAppointments((current) => [created, ...current])
-          return created
+          created = await appointmentsApi.createAppointment(input)
         } catch (err) {
           console.warn('[HealthDataContext] Live create appointment error:', err)
         }
       }
-      const item = { id: `appt-${Date.now().toString(36)}`, status: 'scheduled', ...input }
-      setAppointments((current) => [item, ...current])
+      const item = created || { id: `appt-${Date.now().toString(36)}`, status: 'scheduled', ...input }
+      setAppointments((current) => {
+        const next = [item, ...current]
+        if (currentUserId) storageService.set(`appointments_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('appointments_demo', next)
+        return next
+      })
       return item
     },
-    [auth?.isLiveAuth, setAppointments],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const updateAppointment = useCallback(
@@ -296,9 +418,14 @@ export function HealthDataProvider({ children }) {
           console.warn('[HealthDataContext] Live update appointment error:', err)
         }
       }
-      setAppointments((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+      setAppointments((current) => {
+        const next = current.map((item) => (item.id === id || item._id === id ? { ...item, ...patch } : item))
+        if (currentUserId) storageService.set(`appointments_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('appointments_demo', next)
+        return next
+      })
     },
-    [auth?.isLiveAuth, setAppointments],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const removeAppointment = useCallback(
@@ -310,27 +437,36 @@ export function HealthDataProvider({ children }) {
           console.warn('[HealthDataContext] Live delete appointment error:', err)
         }
       }
-      setAppointments((current) => current.filter((item) => item.id !== id))
+      setAppointments((current) => {
+        const next = current.filter((item) => item.id !== id && item._id !== id)
+        if (currentUserId) storageService.set(`appointments_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('appointments_demo', next)
+        return next
+      })
     },
-    [auth?.isLiveAuth, setAppointments],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const addReminder = useCallback(
     async (input) => {
+      let created = null
       if (auth?.isLiveAuth) {
         try {
-          const created = await remindersApi.createReminder(input)
-          setReminders((current) => [created, ...current])
-          return created
+          created = await remindersApi.createReminder(input)
         } catch (err) {
           console.warn('[HealthDataContext] Live create reminder error:', err)
         }
       }
-      const item = { id: `rem-${Date.now().toString(36)}`, enabled: true, completed: false, ...input }
-      setReminders((current) => [item, ...current])
+      const item = created || { id: `rem-${Date.now().toString(36)}`, enabled: true, completed: false, ...input }
+      setReminders((current) => {
+        const next = [item, ...current]
+        if (currentUserId) storageService.set(`reminders_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('reminders_demo', next)
+        return next
+      })
       return item
     },
-    [auth?.isLiveAuth, setReminders],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const updateReminder = useCallback(
@@ -342,9 +478,14 @@ export function HealthDataProvider({ children }) {
           console.warn('[HealthDataContext] Live update reminder error:', err)
         }
       }
-      setReminders((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+      setReminders((current) => {
+        const next = current.map((item) => (item.id === id || item._id === id ? { ...item, ...patch } : item))
+        if (currentUserId) storageService.set(`reminders_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('reminders_demo', next)
+        return next
+      })
     },
-    [auth?.isLiveAuth, setReminders],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const removeReminder = useCallback(
@@ -356,32 +497,51 @@ export function HealthDataProvider({ children }) {
           console.warn('[HealthDataContext] Live delete reminder error:', err)
         }
       }
-      setReminders((current) => current.filter((item) => item.id !== id))
+      setReminders((current) => {
+        const next = current.filter((item) => item.id !== id && item._id !== id)
+        if (currentUserId) storageService.set(`reminders_${currentUserId}`, next)
+        else if (auth?.isDemoMode) storageService.set('reminders_demo', next)
+        return next
+      })
     },
-    [auth?.isLiveAuth, setReminders],
+    [auth?.isLiveAuth, auth?.isDemoMode, currentUserId],
   )
 
   const markNotificationRead = useCallback(
-    (id) => setReadNotificationIds((current) => (current.includes(id) ? current : [...current, id])),
-    [setReadNotificationIds],
+    (id) =>
+      setReadNotificationIds((current) => {
+        const next = current.includes(id) ? current : [...current, id]
+        if (currentUserId) storageService.set(`readNotifications_${currentUserId}`, next)
+        return next
+      }),
+    [currentUserId],
   )
 
-  const markAllNotificationsRead = useCallback(
-    () => setReadNotificationIds(mockNotifications.map((item) => item.id)),
-    [setReadNotificationIds],
-  )
+  const markAllNotificationsRead = useCallback(() => {
+    const allIds = notifications.map((item) => item.id)
+    setReadNotificationIds(allIds)
+    if (currentUserId) storageService.set(`readNotifications_${currentUserId}`, allIds)
+  }, [currentUserId, notifications])
 
   const addRecentSearch = useCallback(
     (term) => {
       const value = term.trim()
       if (!value) return
-      setRecentSearches((current) => [value, ...current.filter((item) => item !== value)].slice(0, MAX_RECENT_SEARCHES))
+      setRecentSearches((current) => {
+        const next = [value, ...current.filter((item) => item !== value)].slice(0, MAX_RECENT_SEARCHES)
+        if (currentUserId) storageService.set(`recentSearches_${currentUserId}`, next)
+        return next
+      })
     },
-    [setRecentSearches],
+    [currentUserId],
   )
 
   const resetDemoData = useCallback(() => {
-    storageService.clearAll()
+    if (auth?.isLiveAuth) return
+    storageService.remove('documents_demo')
+    storageService.remove('medicines_demo')
+    storageService.remove('appointments_demo')
+    storageService.remove('reminders_demo')
     storageService.set('phase4DocumentMigration', true)
     updateUser(mockUser)
     setDocuments(mockDocuments)
@@ -391,7 +551,7 @@ export function HealthDataProvider({ children }) {
     setLocalFiles({})
     setReadNotificationIds([])
     setRecentSearches([])
-  }, [updateUser, setDocuments, setMedicines, setAppointments, setReminders, setReadNotificationIds, setRecentSearches])
+  }, [auth?.isLiveAuth, updateUser])
 
   const value = useMemo(
     () => ({
@@ -400,7 +560,7 @@ export function HealthDataProvider({ children }) {
       registerLocalFile,
       getLocalFile,
       documents: sortedDocuments,
-      reports: mockReports,
+      reports,
       medicines,
       appointments,
       reminders,
@@ -434,6 +594,7 @@ export function HealthDataProvider({ children }) {
       getLocalFile,
       localFiles,
       sortedDocuments,
+      reports,
       medicines,
       appointments,
       reminders,

@@ -6,11 +6,11 @@ import { Button } from '../common/Button.jsx'
 import { SafeImage } from '../common/SafeImage.jsx'
 import { HowItWorksDialog } from './HowItWorksDialog.jsx'
 
-function getGreeting(date = new Date()) {
+function getGreeting(t, date = new Date()) {
   const hour = date.getHours()
-  if (hour < 12) return 'Good Morning'
-  if (hour < 17) return 'Good Afternoon'
-  return 'Good Evening'
+  if (hour < 12) return t('dashboard.greeting_morning', 'Good Morning')
+  if (hour < 17) return t('dashboard.greeting_afternoon', 'Good Afternoon')
+  return t('dashboard.greeting_evening', 'Good Evening')
 }
 
 export function WelcomeHero() {
@@ -25,7 +25,7 @@ export function WelcomeHero() {
     >
       <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)]">
         <div className="relative z-10 px-6 pt-8 pb-6 sm:px-10 sm:pt-10 md:pb-10">
-          <p className="text-[15px] font-medium text-muted">{getGreeting()},</p>
+          <p className="text-[15px] font-medium text-muted">{getGreeting(t)},</p>
           <h1
             id="welcome-title"
             className="mt-2 text-[2.5rem] leading-[1.02] font-extrabold tracking-tight text-navy-900 sm:text-5xl xl:text-[3.6rem]"
@@ -33,7 +33,7 @@ export function WelcomeHero() {
             {t('dashboard.welcome', 'Welcome Back')},
             <br />
             <span className="bg-linear-to-r from-navy-900 via-brand-600 to-brand-500 bg-clip-text text-transparent">
-              {user.firstName}!
+              {user?.firstName || user?.displayName || 'User'}!
             </span>
           </h1>
           <p className="mt-5 max-w-md text-pretty text-[15px] leading-relaxed text-muted">
@@ -52,7 +52,7 @@ export function WelcomeHero() {
               <span className="grid size-11 place-items-center rounded-full bg-white shadow-card transition-transform group-hover:scale-105">
                 <Play className="size-4 fill-navy-900 text-navy-900" aria-hidden="true" />
               </span>
-              Watch How It Works
+              {t('dashboard.watch_how_it_works', 'Watch How It Works')}
             </button>
           </div>
         </div>

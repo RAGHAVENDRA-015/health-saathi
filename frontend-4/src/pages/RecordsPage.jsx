@@ -46,6 +46,15 @@ export default function RecordsPage() {
 
   const countFor = (id) => (id === 'all' ? stats.total.count : stats[id].count)
 
+  const categoryLabels = {
+    all: t('records.all_types', 'All'),
+    lab: t('records.lab_reports', 'Lab Reports'),
+    prescription: t('records.prescriptions', 'Prescriptions'),
+    scan: t('records.scans', 'Scans & Imaging'),
+    discharge: t('records.discharge_summaries', 'Discharge Summaries'),
+    other: t('records.other', 'Other Documents'),
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -77,18 +86,18 @@ export default function RecordsPage() {
                     selected ? 'bg-white text-navy-900 shadow-card' : 'text-muted hover:text-navy-900',
                   )}
                 >
-                  {tab.label}
+                  {categoryLabels[tab.id] || tab.label}
                   <span className="rounded-full bg-ice-100 px-2 text-xs tabular-nums">{countFor(tab.id)}</span>
                 </button>
               )
             })}
           </div>
           <label className="block sm:w-44">
-            <span className="sr-only">Sort records</span>
-            <select aria-label="Sort records" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="field">
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="name">Name A–Z</option>
+            <span className="sr-only">{t('records.sort_records', 'Sort records')}</span>
+            <select aria-label={t('records.sort_records', 'Sort records')} value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="field">
+              <option value="newest">{t('records.sort_newest', 'Newest first')}</option>
+              <option value="oldest">{t('records.sort_oldest', 'Oldest first')}</option>
+              <option value="name">{t('records.sort_name', 'Name A–Z')}</option>
             </select>
           </label>
           <label className="relative block lg:w-72">
@@ -109,17 +118,17 @@ export default function RecordsPage() {
         ) : (
           <EmptyState
             icon={SearchX}
-            title={documents.length ? 'No matching records' : 'No records yet'}
+            title={documents.length ? t('records.no_matching', 'No matching records') : t('records.no_records_title', 'No records yet')}
             description={
-              documents.length ? 'Try a different category or search term.' : 'Upload your first document to start building your health history.'
+              documents.length ? t('records.no_matching_desc', 'Try a different category or search term.') : t('records.no_records_desc', 'Upload your first document to start building your health history.')
             }
             action={
               documents.length ? (
                 <Button variant="secondary" onClick={() => setSearchParams({}, { replace: true })}>
-                  Clear filters
+                  {t('records.clear_filters', 'Clear filters')}
                 </Button>
               ) : (
-                <Button to="/upload">Upload Document</Button>
+                <Button to="/upload">{t('dashboard.upload_cta', 'Upload Document')}</Button>
               )
             }
           />

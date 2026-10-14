@@ -12,7 +12,7 @@ import { cn } from '../../utils/cn.js'
 const kindIcons = { record: FileText, lab: FlaskConical, medicine: Pill, page: ArrowUpRight, ask: Sparkles }
 
 export function GlobalSearch({ className }) {
-  const { documents, reports, recentSearches, addRecentSearch } = useHealthData()
+  const { documents, reports, medicines, recentSearches, addRecentSearch } = useHealthData()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
@@ -30,8 +30,8 @@ export function GlobalSearch({ className }) {
 
   const trimmedQuery = query.trim()
   const groups = useMemo(
-    () => searchHealthData(query, { documents, reports, medicines: mockMedicines, pages: primaryNavigation }),
-    [query, documents, reports],
+    () => searchHealthData(query, { documents, reports, medicines: medicines || [], pages: primaryNavigation }),
+    [query, documents, reports, medicines],
   )
 
   const askItem = trimmedQuery

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowRight, ChevronRight, FileUp, Lightbulb, Sparkles } from 'lucide-react'
 import { useHealthData } from '../../context/HealthDataContext.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
@@ -128,6 +129,7 @@ function getSuggestion(doc) {
 }
 
 export function AiInsightsPanel() {
+  const { t } = useTranslation()
   const { documents, reports } = useHealthData()
   const { isLiveAuth } = useAuth()
   const [backendFindings, setBackendFindings] = useState([])
@@ -205,20 +207,20 @@ export function AiInsightsPanel() {
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 id="ai-insights-title" className="flex items-center gap-2.5 text-xl font-bold text-navy-900">
             <Sparkles className="size-5 text-brand-600" aria-hidden="true" />
-            AI Health Insights
+            {t('dashboard.ai_insights_title', 'AI Health Insights')}
           </h2>
         </div>
         <div className="flex flex-col items-center justify-center p-8 text-center rounded-2xl border border-dashed border-ice-200 bg-ice-50/50">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-brand-600 mb-3">
             <FileUp className="h-6 w-6" />
           </div>
-          <h3 className="text-sm font-bold text-navy-900">No documents analyzed yet</h3>
+          <h3 className="text-sm font-bold text-navy-900">{t('dashboard.no_docs_analyzed', 'No documents analyzed yet')}</h3>
           <p className="mt-1 text-xs text-muted max-w-xs">
-            Upload your latest lab report or medical document to see personalized AI health insights and biomarker analysis.
+            {t('dashboard.no_docs_analyzed_desc', 'Upload your latest lab report or medical document to see personalized AI health insights and biomarker analysis.')}
           </p>
           <div className="mt-4">
             <Button to="/upload" className="text-xs">
-              Upload Document
+              {t('dashboard.upload_cta', 'Upload Document')}
             </Button>
           </div>
         </div>
@@ -239,13 +241,13 @@ export function AiInsightsPanel() {
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 id="ai-insights-title" className="flex items-center gap-2.5 text-xl font-bold text-navy-900">
           <Sparkles className="size-5 text-brand-600" aria-hidden="true" />
-          AI Health Insights
+          {t('dashboard.ai_insights_title', 'AI Health Insights')}
         </h2>
         <Link
           to={docUrl}
           className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-100/60"
         >
-          View Details
+          {t('common.view_details', 'View Details')}
           <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       </div>
@@ -263,7 +265,7 @@ export function AiInsightsPanel() {
               From your {docTitle}
             </p>
             <Badge tone="brand" className="py-0.5 text-[10px]">
-              AI Analysis
+              {t('dashboard.ai_analysis', 'AI Analysis')}
             </Badge>
           </div>
           <p className="text-pretty text-sm leading-relaxed text-navy-800">{summaryText}</p>
@@ -299,7 +301,7 @@ export function AiInsightsPanel() {
           <Lightbulb className="size-5" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-brand-700">AI Suggestion</span>
+          <span className="block text-sm font-bold text-brand-700">{t('dashboard.ai_suggestion', 'AI Suggestion')}</span>
           <span className="block text-pretty text-xs leading-relaxed text-muted">{suggestionText}</span>
         </span>
         <ChevronRight
@@ -309,7 +311,7 @@ export function AiInsightsPanel() {
       </Link>
 
       <p className="mt-3 text-[11px] text-muted">
-        AI analysis of your uploaded document. For personal clinical guidance, consult your doctor.
+        {t('dashboard.ai_disclaimer', 'AI analysis of your uploaded document. For personal clinical guidance, consult your doctor.')}
       </p>
     </section>
   )
