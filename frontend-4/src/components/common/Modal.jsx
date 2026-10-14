@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
 import { X } from 'lucide-react'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock.js'
 import { cn } from '../../utils/cn.js'
 
 const variants = {
@@ -11,6 +12,8 @@ export function Modal({ open, onClose, title, description, variant = 'center', h
   const dialogRef = useRef(null)
   const titleId = useId()
   const descriptionId = useId()
+
+  useBodyScrollLock(open)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -28,9 +31,9 @@ export function Modal({ open, onClose, title, description, variant = 'center', h
       }}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
-      className={cn('overflow-hidden border-0 bg-white p-0 text-navy-900 shadow-pop', variants[variant])}
+      className={cn('overflow-hidden border-0 bg-white p-0 text-navy-900 shadow-pop overscroll-contain', variants[variant])}
     >
-      <div className="flex h-full max-h-[inherit] flex-col">
+      <div className="flex h-full max-h-[inherit] flex-col overscroll-contain">
         <div className={cn('flex items-start justify-between gap-4 px-6 pt-6', hideHeader && 'sr-only')}>
           <div>
             <h2 id={titleId} className="text-lg font-bold text-navy-900">
@@ -53,7 +56,7 @@ export function Modal({ open, onClose, title, description, variant = 'center', h
             </button>
           )}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">{open && children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{open && children}</div>
       </div>
     </dialog>
   )

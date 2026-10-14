@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import { copilotApi, stripMarkdown, sttApi } from '../services/api/index.js'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock.js'
 import { cn } from '../utils/cn.js'
 
 const DEFAULT_PROMPTS = [
@@ -468,6 +469,7 @@ export default function CopilotPage() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [isLoadingConversation, setIsLoadingConversation] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  useBodyScrollLock(isHistoryOpen)
   const [historySearch, setHistorySearch] = useState('')
   const [conversationToDelete, setConversationToDelete] = useState(null)
   const [editingConvId, setEditingConvId] = useState(null)
@@ -680,11 +682,6 @@ export default function CopilotPage() {
           const recognizedText = (res?.text || res?.data?.text || '').trim()
           if (recognizedText) {
             setInput((prev) => (prev && prev.trim() ? `${prev.trim()} ${recognizedText}` : recognizedText))
-            notify({
-              title: 'Speech Transcribed',
-              description: t('copilot.mic_success', 'Speech transcribed and added to chat input.'),
-              tone: 'success',
-            })
           } else {
             notify({
               title: 'Voice Input',
@@ -897,6 +894,7 @@ export default function CopilotPage() {
 
   const submit = async (event) => {
     event?.preventDefault()
+    setIsAttachMenuOpen(false)
     const question = input.trim()
     if (!question || thinking) return
     setMessages((current) => [...current, createMessage('user', question)])
@@ -973,6 +971,7 @@ export default function CopilotPage() {
       )}
 
       <form
+        ref={isCentered ? attachMenuMobileRef : attachMenuRef}
         onSubmit={submit}
         className={cn(
           'relative flex items-center gap-1.5 sm:gap-2 rounded-2xl bg-white p-1.5 sm:p-2 transition focus-within:ring-2 focus-within:ring-brand-200',
@@ -981,36 +980,18 @@ export default function CopilotPage() {
             : 'border border-ice-200 shadow-xs focus-within:border-brand-300'
         )}
       >
-        {/* Attach Records Menu Popover */}
-        <div ref={isCentered ? attachMenuMobileRef : attachMenuRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setIsAttachMenuOpen((open) => !open)}
-            aria-label={t('copilot.attach_record', 'Attach medical record')}
-            title={t('copilot.attach_record', 'Attach medical record')}
-            className={cn(
-              'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
-              selectedDocId
-                ? 'border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100'
-                : 'border-transparent text-navy-700 hover:bg-ice-100'
-            )}
+        {/* Attach Records Menu Popover - aligned equally flush with the text field box */}
+        {isAttachMenuOpen && (
+          <div
+            role="menu"
+            className="absolute left-0 right-0 bottom-full mb-2 sm:mb-2.5 w-full rounded-2xl border border-ice-200 bg-white p-3 sm:p-4 shadow-pop z-30"
           >
-            <Plus className={cn('size-4.5 sm:size-5 transition-transform duration-200', isAttachMenuOpen && 'rotate-45')} />
-          </button>
-
-          {isAttachMenuOpen && (
-            <div
-              role="menu"
-              className={cn(
-                'absolute left-0 w-[calc(100vw-2rem)] max-w-sm sm:w-96 rounded-2xl border border-ice-200 bg-white p-3 shadow-pop z-30',
-                isCentered ? 'top-full mt-2' : 'bottom-full mb-3'
-              )}
-            >
-              <div className="flex items-center justify-between border-b border-ice-100 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <FileText className="size-4 text-brand-600" />
-                  <span className="text-xs font-extrabold text-navy-900">{t('copilot.attach_record', 'Attach Medical Record')}</span>
-                </div>
+            <div className="flex items-center justify-between border-b border-ice-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <FileText className="size-4 text-brand-600" />
+                <span className="text-xs font-extrabold text-navy-900">{t('copilot.attach_record', 'Attach Medical Record')}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 {selectedDocId && (
                   <button
                     type="button"
@@ -1018,99 +999,123 @@ export default function CopilotPage() {
                       setSelectedDocId(null)
                       setIsAttachMenuOpen(false)
                     }}
-                    className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
+                    className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer px-1 py-0.5"
                   >
                     {t('copilot.detach', 'Detach')}
                   </button>
                 )}
-              </div>
-              <p className="mt-2 text-[11px] leading-4 text-muted">
-                {t('copilot.attach_desc', 'Select a record to scope clinical AI questions, or upload a new file:')}
-              </p>
-
-              {/* Direct Upload Input & Button */}
-              <div className="mt-2.5">
-                <input
-                  ref={isCentered ? fileInputMobileRef : fileInputRef}
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg,.webp"
-                  className="hidden"
-                  onChange={handleDirectFileUpload}
-                />
                 <button
                   type="button"
-                  disabled={isUploadingDoc}
-                  onClick={() => (isCentered ? fileInputMobileRef : fileInputRef).current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-brand-50/70 p-2.5 text-xs font-bold text-brand-700 transition hover:bg-brand-100 hover:border-brand-400 cursor-pointer disabled:opacity-60 shadow-2xs"
+                  onClick={() => setIsAttachMenuOpen(false)}
+                  aria-label={t('common.close', 'Close')}
+                  className="grid size-6 place-items-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-ice-100 transition cursor-pointer"
                 >
-                  {isUploadingDoc ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin text-brand-600" />
-                      <span>{t('copilot.uploading_file', 'Uploading & Analyzing File…')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileUp className="size-4 text-brand-600" />
-                      <span>{t('copilot.upload_device', 'Upload document from device')}</span>
-                    </>
-                  )}
+                  <X className="size-3.5" />
                 </button>
               </div>
+            </div>
+            <p className="mt-2 text-[11px] leading-4 text-muted">
+              {t('copilot.attach_desc', 'Select a record to scope clinical AI questions, or upload a new file:')}
+            </p>
 
-              <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
-                {documents.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-muted">{t('copilot.no_docs', 'No documents available yet. Upload one above!')}</p>
+            {/* Direct Upload Input & Button */}
+            <div className="mt-2.5">
+              <input
+                ref={isCentered ? fileInputMobileRef : fileInputRef}
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.webp"
+                className="hidden"
+                onChange={handleDirectFileUpload}
+              />
+              <button
+                type="button"
+                disabled={isUploadingDoc}
+                onClick={() => (isCentered ? fileInputMobileRef : fileInputRef).current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-brand-50/70 p-2.5 text-xs font-bold text-brand-700 transition hover:bg-brand-100 hover:border-brand-400 cursor-pointer disabled:opacity-60 shadow-2xs"
+              >
+                {isUploadingDoc ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin text-brand-600" />
+                    <span>{t('copilot.uploading_file', 'Uploading & Analyzing File…')}</span>
+                  </>
                 ) : (
-                  documents.map((document) => {
-                    const docId = document.id || document._id
-                    const isSelected = selectedDocId === docId || selectedDocId === document.id || selectedDocId === document._id
-                    const docName = document.title || document.name || document.fileName || 'Document'
-                    return (
-                      <button
-                        key={docId}
-                        type="button"
-                        onClick={() => {
-                          setSelectedDocId(isSelected ? null : docId)
-                          setIsAttachMenuOpen(false)
-                        }}
+                  <>
+                    <FileUp className="size-4 text-brand-600" />
+                    <span>{t('copilot.upload_device', 'Upload document from device')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
+              {documents.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted">{t('copilot.no_docs', 'No documents available yet. Upload one above!')}</p>
+              ) : (
+                documents.map((document) => {
+                  const docId = document.id || document._id
+                  const isSelected = selectedDocId === docId || selectedDocId === document.id || selectedDocId === document._id
+                  const docName = document.title || document.name || document.fileName || 'Document'
+                  return (
+                    <button
+                      key={docId}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDocId(isSelected ? null : docId)
+                        setIsAttachMenuOpen(false)
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition cursor-pointer border',
+                        isSelected
+                          ? 'border-brand-300 bg-brand-50/90 text-brand-900 shadow-xs'
+                          : 'border-transparent hover:bg-ice-50 text-navy-900'
+                      )}
+                    >
+                      <span
                         className={cn(
-                          'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition cursor-pointer border',
-                          isSelected
-                            ? 'border-brand-300 bg-brand-50/90 text-brand-900 shadow-xs'
-                            : 'border-transparent hover:bg-ice-50 text-navy-900'
+                          'grid size-8 shrink-0 place-items-center rounded-lg',
+                          isSelected ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700'
                         )}
                       >
-                        <span
-                          className={cn(
-                            'grid size-8 shrink-0 place-items-center rounded-lg',
-                            isSelected ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700'
-                          )}
-                        >
-                          <FileText className="size-4" />
+                        <FileText className="size-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-bold">{docName}</span>
+                        <span className="block truncate text-[10px] text-muted">
+                          {document.type?.toUpperCase() || document.classification || 'DOCUMENT'} · {document.provider || 'Record'}
                         </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-xs font-bold">{docName}</span>
-                          <span className="block truncate text-[10px] text-muted">
-                            {document.type?.toUpperCase() || document.classification || 'DOCUMENT'} · {document.provider || 'Record'}
-                          </span>
-                        </span>
-                        {isSelected ? (
-                          <Badge tone="brand" className="text-[10px]">
-                            <Check className="size-3 mr-0.5" /> {t('copilot.attached', 'Attached')}
-                          </Badge>
-                        ) : (
-                          <Badge tone="ice" className="text-[10px]">
-                            {t('copilot.select', 'Select')}
-                          </Badge>
-                        )}
-                      </button>
-                    )
-                  })
-                )}
-              </div>
+                      </span>
+                      {isSelected ? (
+                        <Badge tone="brand" className="text-[10px]">
+                          <Check className="size-3 mr-0.5" /> {t('copilot.attached', 'Attached')}
+                        </Badge>
+                      ) : (
+                        <Badge tone="ice" className="text-[10px]">
+                          {t('copilot.select', 'Select')}
+                        </Badge>
+                      )}
+                    </button>
+                  )
+                })
+              )}
             </div>
+          </div>
+        )}
+
+        {/* Attach Button */}
+        <button
+          type="button"
+          onClick={() => setIsAttachMenuOpen((open) => !open)}
+          aria-label={t('copilot.attach_record', 'Attach medical record')}
+          title={t('copilot.attach_record', 'Attach medical record')}
+          className={cn(
+            'grid size-9 sm:size-11 shrink-0 place-items-center rounded-xl transition cursor-pointer border',
+            selectedDocId
+              ? 'border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100'
+              : 'border-transparent text-navy-700 hover:bg-ice-100'
           )}
-        </div>
+        >
+          <Plus className={cn('size-4.5 sm:size-5 transition-transform duration-200', isAttachMenuOpen && 'rotate-45')} />
+        </button>
 
         <label htmlFor={isCentered ? 'copilot-message-centered' : 'copilot-message'} className="sr-only">
           Ask HealthSaathi a question
@@ -1408,7 +1413,7 @@ export default function CopilotPage() {
             aria-hidden="true"
           />
           <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
-            <aside className="w-screen max-w-md bg-white shadow-2xl flex flex-col border-l border-ice-200 animate-in slide-in-from-right duration-300">
+            <aside className="w-screen max-w-md bg-white shadow-2xl flex flex-col border-l border-ice-200 animate-in slide-in-from-right duration-300 overscroll-contain">
               {/* Drawer Header */}
               <div className="flex items-center justify-between border-b border-ice-100 px-5 py-4">
                 <div className="flex items-center gap-2.5">
@@ -1458,7 +1463,7 @@ export default function CopilotPage() {
               </div>
 
               {/* Drawer Conversation List */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 overscroll-contain">
                 {isLoadingHistory ? (
                   <div className="space-y-3 py-4">
                     {[1, 2, 3].map((i) => (

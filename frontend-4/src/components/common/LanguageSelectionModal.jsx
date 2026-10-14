@@ -5,6 +5,7 @@ import { SUPPORTED_LANGUAGES, setAppLanguage } from '../../i18n/index.js'
 import { userApi } from '../../services/api/userApi.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { storageService } from '../../services/storageService.js'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock.js'
 
 export function LanguageSelectionModal({ open, onComplete }) {
   const { t, i18n } = useTranslation()
@@ -12,6 +13,8 @@ export function LanguageSelectionModal({ open, onComplete }) {
   const [selectedLang, setSelectedLang] = useState(i18n.language || 'en')
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState(null)
+
+  useBodyScrollLock(open)
 
   if (!open) return null
 
@@ -87,7 +90,7 @@ export function LanguageSelectionModal({ open, onComplete }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="language-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-md animate-fade-in overscroll-contain"
     >
       <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-pop border border-ice-100 flex flex-col gap-6">
         {/* Header with globe icon */}

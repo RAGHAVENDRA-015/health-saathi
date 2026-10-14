@@ -14,7 +14,7 @@ export function SidebarContent({ onNavigate }) {
     <div className="flex h-full flex-col gap-6 p-4">
       <Logo className="px-2 pt-2" />
 
-      <nav aria-label="Primary" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+      <nav aria-label="Primary" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 overscroll-contain">
         <ul className="flex flex-col gap-1">
           {primaryNavigation.map(({ id, label, to, icon: Icon, end }) => (
             <li key={id}>
